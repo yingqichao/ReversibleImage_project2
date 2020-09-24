@@ -15,6 +15,7 @@ from network.discriminator import Discriminator
 from loss.vgg_loss import VGGLoss
 from encoder.prep_unet import PrepNetwork_Unet
 from decoder.revert_unet import Revert_Unet
+from encoder.prep_naive import PrepNetwork_Naive
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):
@@ -23,11 +24,9 @@ class ReversibleImageNetwork_hanson:
         self.device = self.config.device
         self.username = username
         """ Generator Network"""
-        # self.encoder_decoder = EncoderDecoder(username, config=config).to(self.device)
-        self.prep_network = PrepNetwork_Unet(config=config)
-        self.hiding_network = Hiding_naive(input_channel=64, config=config)
+        self.encoder_decoder = EncoderDecoder(config=config).to(self.device)
+        self.preprocessing_network = PrepNetwork_Unet(config=config)
         """ Recovery Network """
-        self.extract_network = Extract_naive(config=config)
         self.revert_network = Revert_Unet(config=config)
         """Localize Network"""
         # if self.username=="qichao":
@@ -48,9 +47,10 @@ class ReversibleImageNetwork_hanson:
         self.mse_loss = nn.MSELoss().to(self.device)
 
         """Optimizer"""
-        self.optimizer_prep_network = torch.optim.Adam(self.prep_network.parameters())
+        self.optimizer_encoder_decoder_network = torch.optim.Adam(self.encoder_decoder.parameters())
+        self.optimizer_preprocessing_network = torch.optim.Adam(self.preprocessing_network.parameters())
         self.optimizer_revert_network = torch.optim.Adam(self.revert_network.parameters())
-        #self.optimizer_localizer = torch.optim.Adam(self.localizer.parameters())
+        # self.optimizer_localizer = torch.optim.Adam(self.localizer.parameters())
         self.optimizer_discrim = torch.optim.Adam(self.discriminator.parameters())
 
         """Attack Layers"""
@@ -59,10 +59,69 @@ class ReversibleImageNetwork_hanson:
         self.resize_layer = Resize((0.5, 0.7)).to(self.device)
         self.gaussian = Gaussian(config).to(self.device)
 
+    def pretrain_on_batch(self, Cover, Another):
+        """
+            预训练：训练Hiding Images in Images论文的结果，也即把Secret图像隐藏到Cover图像中
+            其中HidingNetwork和ExtractNetwork的训练主要是为了下面的train_on_batch
+        """
+        batch_size = Cover.shape[0]
+        self.encoder_decoder.train()
+
+        with torch.enable_grad():
+            """ Run, Train the discriminator"""
+            # self.optimizer_localizer.zero_grad()
+            self.optimizer_discrim.zero_grad()
+            Marked, Extracted = self.encoder_decoder(Cover, Another)
+            """ Discriminate """
+            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
+            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
+            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
+            d_on_cover = self.discriminator(Cover)
+            d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
+            d_loss_on_cover.backward()
+            d_on_encoded = self.discriminator(Marked.detach())
+            d_on_recovered = self.discriminator(Extracted.detach())
+            d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
+            d_loss_on_recovered = self.bce_with_logits_loss(d_on_recovered, d_target_label_encoded)
+            d_loss_on_fake_total = (d_loss_on_encoded + d_loss_on_recovered) / 2
+            d_loss_on_fake_total.backward()
+            self.optimizer_discrim.step()
+
+            """ Train PrepNetwork and RevertNetwork """
+            if self.config.useVgg == False:
+                loss_cover = self.mse_loss(Marked, Cover)
+                loss_recover = self.mse_loss(Extracted, Cover)
+            else:
+                vgg_on_cov = self.vgg_loss(Cover)
+                vgg_on_enc = self.vgg_loss(Marked)
+                loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
+                vgg_on_recovery = self.vgg_loss(Extracted)
+                loss_recover = self.mse_loss(vgg_on_cov, vgg_on_recovery)
+            d_on_encoded_for_enc = self.discriminator(Marked)
+            g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
+            d_on_encoded_for_recovery = self.discriminator(Extracted)
+            g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
+            """ Total loss for EncoderDecoder """
+            loss_enc_dec = g_loss_adv_recovery * self.config.hyper_discriminator + loss_recover * self.config.hyper_recovery \
+                           + loss_cover * self.config.hyper_cover + g_loss_adv_enc * self.config.hyper_discriminator
+            # + loss_cover * self.config.hyper_cover\
+            # + loss_localization_again * self.config.hyper_localizer\
+            # + g_loss_adv_enc * self.config.hyper_discriminator \
+            loss_enc_dec.backward()
+            self.optimizer_encoder_decoder_network.step()
+
+        losses = {
+            'loss_sum': loss_enc_dec.item(),
+            'loss_localization': 0,  # loss_localization.item(),
+            'loss_cover': loss_cover.item(),
+            'loss_recover': loss_recover.item(),
+            'loss_discriminator_enc': g_loss_adv_enc.item(),
+            'loss_discriminator_recovery': g_loss_adv_recovery.item()
+        }
+        return losses, (Marked, Extracted)
 
 
-
-    def train_on_batch(self, Cover, Another):
+    def train_on_batch(self, Cover):
         """
             训练方法：先额外训练单个Secret图像向Cover图像嵌入和提取的网络（可以通过读取预训练结果），
             然后将Secret图像送入PrepNetwork(基于Unet)做处理（置乱），送进嵌入和提取网络，
@@ -70,19 +129,17 @@ class ReversibleImageNetwork_hanson:
             Loss：B与原图的loss，Hidden与原图的loss
         """
         batch_size = Cover.shape[0]
-        self.prep_network.train()
-        self.hiding_network.train()
-        self.extract_network.train()
+        self.preprocessing_network.train()
+        self.encoder_decoder.train()
         self.revert_network.train()
-        #self.localizer.train()
 
         with torch.enable_grad():
             """ Run, Train the discriminator"""
             #self.optimizer_localizer.zero_grad()
             self.optimizer_discrim.zero_grad()
-            Secret_processed = self.prep_network(Cover)
-            Marked = self.hiding_network(Secret_processed)
-            Extracted = self.extract_network(Marked)
+            Secret_processed = self.preprocessing_network(Cover)
+            Marked, Extracted = self.encoder_decoder(Cover, Secret_processed)
+
             Recovered = self.revert_network(Extracted)
             """ Discriminate """
             d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
@@ -108,7 +165,7 @@ class ReversibleImageNetwork_hanson:
             # loss_localization.backward()
             # self.optimizer_localizer.step()
             """ Train PrepNetwork and RevertNetwork """
-            self.optimizer_prep_network.zero_grad()
+            self.optimizer_preprocessing_network.zero_grad()
             self.optimizer_revert_network.zero_grad()
             # pred_again_label = self.localizer(x_1_attack)
             # loss_localization_again = self.bce_with_logits_loss(pred_again_label, cropout_label)
@@ -133,7 +190,7 @@ class ReversibleImageNetwork_hanson:
                             # + g_loss_adv_enc * self.config.hyper_discriminator \
             loss_enc_dec.backward()
             self.optimizer_revert_network.step()
-            self.optimizer_prep_network.step()
+            self.optimizer_preprocessing_network.step()
 
         losses = {
             'loss_sum': loss_enc_dec.item(),
@@ -143,7 +200,7 @@ class ReversibleImageNetwork_hanson:
             'loss_discriminator_enc': g_loss_adv_enc.item(),
             'loss_discriminator_recovery': g_loss_adv_recovery.item()
         }
-        return losses, (Marked, Recovered, None, None)
+        return losses, (Marked, Recovered)
 
     def validate_on_batch(self, Cover, Another):
         pass
@@ -172,13 +229,25 @@ class ReversibleImageNetwork_hanson:
         # }
         # return losses, (x_hidden, x_recover.mul(mask) + Cover.mul(1 - mask), pred_label, cropout_label)
 
-    def save_state_dict(self, path):
+    def save_state_dict_PrepRevert(self, path):
         torch.save(self.revert_network.state_dict(), path + '_revert_network.pkl')
-        torch.save(self.prep_network.state_dict(), path + '_prep_network.pkl')
+        torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
 
-    def load_state_dict(self,path):
-        self.prep_network.load_state_dict(torch.load(path + '_prep_network.pkl'))
+    def save_state_dict_EncDec(self, path):
+        torch.save(self.encoder_decoder.state_dict(), path + '_encoder_decoder_network.pkl')
+
+    def save_state_dict_Discriminator(self, path):
+        torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
+
+    def load_state_dict_Discriminator(self,path):
+        self.discriminator.load_state_dict(torch.load(path + '_discriminator_network.pkl'))
+
+    def load_state_dict_PrepRevert(self,path):
+        self.preprocessing_network.load_state_dict(torch.load(path + '_prep_network.pkl'))
         self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'))
+
+    def load_state_dict_EncDec(self,path):
+        self.encoder_decoder.load_state_dict(torch.load(path + '_encoder_decoder_network.pkl'))
 
     # def forward(self, Cover, Another, skipLocalizationNetwork, skipRecoveryNetwork, is_test=False):
     #     # 得到Encode后的特征平面

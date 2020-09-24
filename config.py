@@ -15,7 +15,12 @@ class GlobalConfig():
         self.device = torch.device("cuda")
         self.num_classes = 1
 
-        # self.beta = (0.1,1,1)
+        """ If Skip Training """
+        self.skipPreTraining = False
+        self.skipMainTraining = False
+        self.loadfromEpochNum = 50
+
+        """ Hyper Params """
         self.hyper_localizer = 0.1
         self.useVgg = True
         if self.useVgg:

@@ -5,7 +5,7 @@ from config import GlobalConfig
 from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
 import util
-from encoder.encoder_rotate_prep import Encoder_rotate_prep
+from encoder.prep_naive import PrepNetwork_Naive
 
 def flip(x, dim):
     indices = [slice(None)] * x.dim()
@@ -14,48 +14,43 @@ def flip(x, dim):
     return x[tuple(indices)]
 
 class Hiding_naive(nn.Module):
-    def __init__(self,input_channel=192,config=GlobalConfig()):
+    def __init__(self,config=GlobalConfig()):
         super(Hiding_naive, self).__init__()
         self.config = config
         # Prep
-        # self.Prepare = Encoder_rotate_prep(config)
+        self.Prepare = PrepNetwork_Naive(config)
 
         # Hiding
         self.initialH3 = nn.Sequential(
-            DoubleConv(input_channel + 3, 64, mode=0),
-            DoubleConv(64, 64, mode=0),
+            DoubleConv(150 + 3, 50, mode=0),
+            DoubleConv(50, 50, mode=0),
         )
         self.initialH4 = nn.Sequential(
-            DoubleConv(input_channel + 3, 64, mode=1),
-            DoubleConv(64, 64, mode=1),
+            DoubleConv(150 + 3, 50, mode=1),
+            DoubleConv(50, 50, mode=1),
         )
         self.initialH5 = nn.Sequential(
-            DoubleConv(input_channel + 3, 64, mode=2),
-            DoubleConv(64, 64, mode=2),
+            DoubleConv(150 + 3, 50, mode=2),
+            DoubleConv(50, 50, mode=2),
         )
         self.finalH3 = nn.Sequential(
-            DoubleConv(192, 64, mode=0),
-            DoubleConv(64, 64, mode=0),
+            DoubleConv(150, 50, mode=0),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalH4 = nn.Sequential(
-            DoubleConv(192, 64, mode=1),
-            DoubleConv(64, 64, mode=1),
+            DoubleConv(150, 50, mode=1),
+            DoubleConv(50, 50, mode=1),
         )
         self.finalH5 = nn.Sequential(
-            DoubleConv(192, 64, mode=2),
-            DoubleConv(64, 64, mode=2),
+            DoubleConv(150, 50, mode=2),
+            DoubleConv(50, 50, mode=2),
         )
         self.finalH = nn.Sequential(
-            nn.Conv2d(192, 3, kernel_size=1, padding=0))
+            nn.Conv2d(150, 3, kernel_size=1, padding=0))
 
-    def forward(self, p):
-        # Conduct Image Rotation
-
-        # Cover_flip_xy = flip(Cover_flip_y, 3).detach()
-        # p_rotate = self.Prepare(flip[0], flip[1])
-        # p_rotate2 = self.Prepare(flip[1])
-        # p_rotate3 = self.Prepare(flip[2])
-        # mid = torch.cat((p_rotate, p), 1)
+    def forward(self, Cover, Another):
+        prep = self.Prepare(Another)
+        p = torch.cat((prep, Cover), 1)
         h1 = self.initialH3(p)
         h2 = self.initialH4(p)
         h3 = self.initialH5(p)

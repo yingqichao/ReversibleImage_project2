@@ -1,9 +1,4 @@
-import csv
-import logging
 import os
-import re
-import time
-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -40,6 +35,13 @@ def imshow(input_img, text, std, mean):
     plt.title(text)
     plt.show()
     return
+
+def plt_plot(hist):
+    plt.plot(hist)
+    plt.title('hist_loss_localization')
+    plt.ylabel('Loss')
+    plt.xlabel('Batch')
+    plt.show()
 
 def image_to_tensor(image):
     """
