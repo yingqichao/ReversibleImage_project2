@@ -1,17 +1,15 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+from encoder.hiding_naive import Hiding_naive
 from config import GlobalConfig
 from decoder.decoder_pool import Decoder_pool
-from noise_layers.cropout import Cropout
-from noise_layers.identity import Identity
+from decoder.extract_naive import Decoder_rotate
+from encoder.encoder_pool_shuffle import EncoderNetwork_pool_shuffle
+from encoder.encoder_rotate import Encoder_rotate
+from noise_layers.gaussian import Gaussian
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.resize import Resize
-from noise_layers.gaussian import Gaussian
-from encoder.encoder_pool_shuffle import EncoderNetwork_pool_shuffle
-from encoder.encoder_noPool_shuffle import EncoderNetwork_noPool_shuffle
-from decoder.decoder_noPool import Decoder_noPool
-from encoder.encoder_rotate import Encoder_rotate
-from decoder.decoder_rotate import Decoder_rotate
+
 
 def flip(x, dim):
     indices = [slice(None)] * x.dim()
