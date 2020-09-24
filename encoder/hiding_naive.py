@@ -22,28 +22,28 @@ class Hiding_naive(nn.Module):
 
         # Hiding
         self.initialH3 = nn.Sequential(
-            DoubleConv(150 + 3, 50, mode=0),
+            DoubleConv(150 + 3, 50, mode=1),
             DoubleConv(50, 50, mode=0),
         )
         self.initialH4 = nn.Sequential(
             DoubleConv(150 + 3, 50, mode=1),
-            DoubleConv(50, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.initialH5 = nn.Sequential(
-            DoubleConv(150 + 3, 50, mode=2),
-            DoubleConv(50, 50, mode=2),
+            DoubleConv(150 + 3, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalH3 = nn.Sequential(
-            DoubleConv(150, 50, mode=0),
+            DoubleConv(150, 50, mode=1),
             DoubleConv(50, 50, mode=0),
         )
         self.finalH4 = nn.Sequential(
             DoubleConv(150, 50, mode=1),
-            DoubleConv(50, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalH5 = nn.Sequential(
-            DoubleConv(150, 50, mode=2),
-            DoubleConv(50, 50, mode=2),
+            DoubleConv(150, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalH = nn.Sequential(
             nn.Conv2d(150, 3, kernel_size=1, padding=0))

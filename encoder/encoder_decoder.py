@@ -33,7 +33,7 @@ class EncoderDecoder(nn.Module):
 
         # self.cropout_layer = Cropout(config).to(self.device)
         self.gaussian = Gaussian(config).to(self.device)
-        self.resize_layer = Resize((0.5, 0.7)).to(self.device)
+        # self.resize_layer = Resize((0.5, 0.7)).to(self.device)
         self.extract_layer = Extract_naive(config).to(self.device)
 
     def forward(self, Cover, Another):

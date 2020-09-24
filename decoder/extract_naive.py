@@ -10,28 +10,28 @@ class Extract_naive(nn.Module):
         super(Extract_naive, self).__init__()
         self.config = config
         self.initialR3 = nn.Sequential(
-            DoubleConv(3, 50, mode=0),
+            DoubleConv(3, 50, mode=1),
             DoubleConv(50, 50, mode=0),
         )
         self.initialR4 = nn.Sequential(
             DoubleConv(3, 50, mode=1),
-            DoubleConv(50, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.initialR5 = nn.Sequential(
-            DoubleConv(3, 50, mode=2),
-            DoubleConv(50, 50, mode=2),
+            DoubleConv(3, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalR3 = nn.Sequential(
-            DoubleConv(150, 50, mode=0),
+            DoubleConv(150, 50, mode=1),
             DoubleConv(50, 50, mode=0),
         )
         self.finalR4 = nn.Sequential(
             DoubleConv(150, 50, mode=1),
-            DoubleConv(50, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalR5 = nn.Sequential(
-            DoubleConv(150, 50, mode=2),
-            DoubleConv(50, 50, mode=2),
+            DoubleConv(150, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalR = nn.Sequential(
             nn.Conv2d(150, 3, kernel_size=1, padding=0))

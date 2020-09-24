@@ -12,28 +12,28 @@ class PrepNetwork_Naive(nn.Module):
         self.config = config
         # Prep
         self.initialP3 = nn.Sequential(
-            DoubleConv(3, 50, mode=0),  # 3*3
+            DoubleConv(3, 50, mode=1),  # 3*3
             DoubleConv(50, 50, mode=0),
         )
         self.initialP4 = nn.Sequential(
             DoubleConv(3, 50, mode=1),  # 3*3
-            DoubleConv(50, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.initialP5 = nn.Sequential(
-            DoubleConv(3, 50, mode=2),  # 3*3
-            DoubleConv(50, 50, mode=2),
+            DoubleConv(3, 50, mode=1),  # 3*3
+            DoubleConv(50, 50, mode=0),
         )
         self.finalP3 = nn.Sequential(
-            DoubleConv(150, 50, mode=0),
+            DoubleConv(150, 50, mode=1),
             DoubleConv(50, 50, mode=0),
         )
         self.finalP4 = nn.Sequential(
             DoubleConv(150, 50, mode=1),
-            DoubleConv(50, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
         self.finalP5 = nn.Sequential(
-            DoubleConv(150, 50, mode=2),
-            DoubleConv(50, 50, mode=2),
+            DoubleConv(150, 50, mode=1),
+            DoubleConv(50, 50, mode=0),
         )
 
 
