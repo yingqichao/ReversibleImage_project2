@@ -38,8 +38,7 @@ class PrepNetwork_Naive(nn.Module):
 
 
 
-    def forward(self, cover1, cover2):
-        p = torch.cat((cover1, cover2), 1)
+    def forward(self, p):
         p1 = self.initialP3(p)
         p2 = self.initialP4(p)
         p3 = self.initialP5(p)

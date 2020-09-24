@@ -17,7 +17,7 @@ class GlobalConfig():
 
         """ If Skip Training """
         self.skipPreTraining = False
-        self.skipMainTraining = False
+        self.skipMainTraining = True
         self.skipLocalizerTraining = True
         self.loadfromEpochNum = 50
 
@@ -31,7 +31,7 @@ class GlobalConfig():
         self.hyper_discriminator = 0.001
         self.hyper_recovery = 1
         self.num_epochs = 50
-        self.train_batch_size = 2
+        self.train_batch_size = 4
         self.test_batch_size = 1
 
         self.learning_rate = 0.0001

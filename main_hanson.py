@@ -51,8 +51,12 @@ if __name__ =='__main__':
             # train
             for idx, train_batch in enumerate(train_loader):
                 data, _ = train_batch
-                train_covers = data.to(device)
-                losses, output = net.pretrain_on_batch(train_covers)
+                train_covers = data[:len(data) // 2]
+                train_secrets = data[len(data) // 2:]
+                train_secrets = torch.tensor(train_secrets, requires_grad=False).to(device)
+                train_covers = torch.tensor(train_covers, requires_grad=False).to(device)
+
+                losses, output = net.pretrain_on_batch(train_covers,train_secrets)
                 x_hidden, x_recover = output
                 # losses
                 train_loss_discriminator_enc.append(losses['loss_discriminator_enc'])
@@ -85,10 +89,6 @@ if __name__ =='__main__':
                                          './Images/pretrain/original',
                                          std=config.std,
                                          mean=config.mean)
-
-
-            #torch.save(net.state_dict(), MODELS_PATH + 'Epoch N{}.pkl'.format(epoch + 1))
-
 
             mean_train_loss_discriminator_enc = np.mean(train_loss_discriminator_enc)
             mean_train_loss_discriminator_recovery = np.mean(train_loss_discriminator_recovery)

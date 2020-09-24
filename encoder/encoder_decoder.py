@@ -6,7 +6,7 @@ from encoder.hiding_naive import Hiding_naive
 from noise_layers.gaussian import Gaussian
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.resize import Resize
-
+from decoder.extract_naive import Extract_naive
 
 def flip(x, dim):
     indices = [slice(None)] * x.dim()
@@ -26,7 +26,7 @@ class EncoderDecoder(nn.Module):
         super(EncoderDecoder, self).__init__()
         self.config = config
         self.device = self.config.device
-        self.preprocessing_network = PrepNetwork_Naive(config=config)
+
         self.hiding_network = Hiding_naive(config=config)
         # Noise Network
         self.jpeg_layer = JpegCompression(self.device)
@@ -34,11 +34,11 @@ class EncoderDecoder(nn.Module):
         # self.cropout_layer = Cropout(config).to(self.device)
         self.gaussian = Gaussian(config).to(self.device)
         self.resize_layer = Resize((0.5, 0.7)).to(self.device)
+        self.extract_layer = Extract_naive(config).to(self.device)
 
     def forward(self, Cover, Another):
 
-        Prep = self.preprocessing_network(Another)
-        Marked = self.hiding_network(Prep, Cover)
+        Marked = self.hiding_network(Cover, Another)
 
 
         Marked_gaussian = self.gaussian(Marked)
@@ -46,7 +46,7 @@ class EncoderDecoder(nn.Module):
         Marked_attack = self.jpeg_layer(Marked_gaussian)
 
         # 训练RecoverNetwork：根据部分信息恢复原始图像，这里不乘以之前的pred_label（防止网络太深）
-        out = self.recovery1(Marked_attack)
+        out = self.extract_layer(Marked_attack)
 
         # Test
         # if is_test:

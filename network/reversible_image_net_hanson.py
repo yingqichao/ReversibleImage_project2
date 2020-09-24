@@ -90,13 +90,14 @@ class ReversibleImageNetwork_hanson:
             """ Train PrepNetwork and RevertNetwork """
             if self.config.useVgg == False:
                 loss_cover = self.mse_loss(Marked, Cover)
-                loss_recover = self.mse_loss(Extracted, Cover)
+                loss_recover = self.mse_loss(Extracted, Another)
             else:
                 vgg_on_cov = self.vgg_loss(Cover)
+                vgg_on_another = self.vgg_loss(Another)
                 vgg_on_enc = self.vgg_loss(Marked)
                 loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
                 vgg_on_recovery = self.vgg_loss(Extracted)
-                loss_recover = self.mse_loss(vgg_on_cov, vgg_on_recovery)
+                loss_recover = self.mse_loss(vgg_on_another, vgg_on_recovery)
             d_on_encoded_for_enc = self.discriminator(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
             d_on_encoded_for_recovery = self.discriminator(Extracted)
