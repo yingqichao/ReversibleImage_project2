@@ -18,15 +18,16 @@ class GlobalConfig():
         """ If Skip Training """
         self.skipPreTraining = False
         self.skipMainTraining = False
+        self.skipLocalizerTraining = True
         self.loadfromEpochNum = 50
 
         """ Hyper Params """
         self.hyper_localizer = 0.1
-        self.useVgg = True
+        self.useVgg = False
         if self.useVgg:
             self.hyper_cover = 1
         else:
-            self.hyper_cover = 0.1
+            self.hyper_cover = 1
         self.hyper_discriminator = 0.001
         self.hyper_recovery = 1
         self.num_epochs = 50

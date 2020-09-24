@@ -1,22 +1,18 @@
 # toooest %matplotlib inline
 import os
-from loss.vgg_loss import VGGLoss
-import matplotlib.pyplot as plt
+
 import numpy as np
 import torch
-import torch.optim as optim
 import torchvision.transforms as transforms
 from torch import utils
-from torchvision import datasets, utils
-from network.reversible_image_net import ReversibleImageNetwork
-from config import GlobalConfig
-import torch.nn as nn
-import torch.nn.functional as F
+from torchvision import datasets
+from network.localize_net import Localize_hanson
 import util
+from config import GlobalConfig
 from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
+from ImageLoader_specific import ImageLoader
 
-# Directory path
-# os.chdir("..")
+
 if __name__ =='__main__':
     # Setting
     config = GlobalConfig()
@@ -100,8 +96,8 @@ if __name__ =='__main__':
             mean_train_loss_cover = np.mean(train_loss_cover)
             mean_train_loss_recover = np.mean(train_loss_recover)
             hist_loss_discriminator_enc.append(mean_train_loss_discriminator_enc)
-            hist_loss_localization.append(mean_train_loss_cover)
-            hist_loss_cover.append(mean_train_loss_localization)
+            hist_loss_cover.append(mean_train_loss_cover)
+            hist_loss_localization.append(mean_train_loss_localization)
             hist_loss_recover.append(mean_train_loss_recover)
             net.save_state_dict_EncDec(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
             net.save_state_dict_Discriminator(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
@@ -119,6 +115,37 @@ if __name__ =='__main__':
             #     losses, output = net.validate_on_batch(test_covers, test_covers)
 
         return net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery
+
+    def train_localizer(net, specific_loader, config):
+        """ 到这里位置，第一阶段训练已经完成，不然这个函数运行不起来 """
+
+        train_loss_localization  = []
+        hist_loss_localization = []
+        for epoch in range(num_epochs):
+            # train
+            for idx, train_batch in enumerate(specific_loader):
+                data, _ = train_batch
+                train_covers = data.to(device)
+                losses, crop_Predicted = net.train_on_batch(train_covers)
+                # losses
+                train_loss_localization.append(losses['loss_localization'])
+
+
+            mean_train_loss_localization = np.mean(train_loss_localization)
+            hist_loss_localization.append(mean_train_loss_localization)
+
+            net.save_state_dict(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
+            # Prints epoch average loss
+            print('Epoch [{0}/{1}], Average_loss: Localization Loss {2:.4f}'.format(
+                epoch + 1, num_epochs, mean_train_loss_localization))
+
+            # validate
+            # for idx, test_batch in enumerate(test_loader):
+            #     data, _ = test_batch
+            #     test_covers = data.to(device)
+            #     losses, output = net.validate_on_batch(test_covers, test_covers)
+
+        return net, hist_loss_localization
 
     def train(net, train_loader, config):
         """ 到这里位置，第一阶段训练已经完成，不然这个函数运行不起来 """
@@ -172,8 +199,8 @@ if __name__ =='__main__':
             mean_train_loss_cover = np.mean(train_loss_cover)
             mean_train_loss_recover = np.mean(train_loss_recover)
             hist_loss_discriminator_enc.append(mean_train_loss_discriminator_enc)
-            hist_loss_localization.append(mean_train_loss_cover)
-            hist_loss_cover.append(mean_train_loss_localization)
+            hist_loss_cover.append(mean_train_loss_cover)
+            hist_loss_localization.append(mean_train_loss_localization)
             hist_loss_recover.append(mean_train_loss_recover)
             net.save_state_dict_PrepRevert(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
             # Prints epoch average loss
@@ -244,6 +271,10 @@ if __name__ =='__main__':
         util.plt_plot(hist_loss_discriminator_recovery)
     else:
         net.load_state_dict_PrepRevert(torch.load(MODELS_PATH + 'Epoch N'+config.loadfromEpochNum))
+    # if not config.skipLocalizerTraining:
+    #     net_localize = Localize_hanson()
+    #     specific_loader = ImageLoader()
+    #     net, hist_loss_localization = train_localizer(net_localize, specific_loader, config)
 
     # test_model(net, test_loader, beta, learning_rate, isSelfRecovery=True)
 
