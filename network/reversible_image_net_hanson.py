@@ -5,8 +5,7 @@ from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
 from localizer.localizer import LocalizeNetwork
 from localizer.localizer_noPool import LocalizeNetwork_noPool
-from decoder.extract_naive import Extract_naive
-from encoder.hiding_naive import Hiding_naive
+
 from noise_layers.cropout import Cropout
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.resize import Resize
