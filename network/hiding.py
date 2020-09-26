@@ -1,50 +1,25 @@
 # %matplotlib inline
 import torch
 import torch.nn as nn
-
+from network.double_conv import DoubleConv
+from network.single_conv import SingleConv
 
 # Hiding Network (5 conv layers)
 class HidingNetwork(nn.Module):
     def __init__(self):
         super(HidingNetwork, self).__init__()
         self.initialH3 = nn.Sequential(
-            nn.Conv2d(153, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU())
+            DoubleConv(153, 50, mode=0),
+            DoubleConv(50, 50, mode=0))
         self.initialH4 = nn.Sequential(
-            nn.Conv2d(153, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU())
+            DoubleConv(153, 50, mode=1),
+            DoubleConv(50, 50, mode=1))
         self.initialH5 = nn.Sequential(
-            nn.Conv2d(153, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU())
-        self.finalH3 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=3, padding=1),
-            nn.ReLU())
-        self.finalH4 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU())
-        self.finalH5 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=5, padding=2),
-            nn.ReLU())
+            DoubleConv(153, 50, mode=2),
+            DoubleConv(50, 50, mode=2))
+        self.finalH3 = SingleConv(150, 50, mode=0)
+        self.finalH4 = DoubleConv(150, 50, mode=1)
+        self.finalH5 = SingleConv(150, 50, mode=1)
         self.finalH = nn.Sequential(
             nn.Conv2d(150, 3, kernel_size=1, padding=0))
 

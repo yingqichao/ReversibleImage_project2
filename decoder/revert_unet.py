@@ -5,6 +5,7 @@ from config import GlobalConfig
 from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
 import util
+from network.single_conv import SingleConv
 
 class Revert_Unet(nn.Module):
     def __init__(self,input_channel, config=GlobalConfig()):
@@ -63,15 +64,9 @@ class Revert_Unet(nn.Module):
         self.prep1_3 = nn.Sequential(
             DoubleConv(64+3, 50, mode=2),
             DoubleConv(50, 50, mode=2))
-        self.prep2_1 = nn.Sequential(
-            DoubleConv(150, 50, mode=0),
-            DoubleConv(50, 50, mode=0))
-        self.prep2_2 = nn.Sequential(
-            DoubleConv(150, 50, mode=1),
-            DoubleConv(50, 50, mode=1))
-        self.prep2_3 = nn.Sequential(
-            DoubleConv(150, 50, mode=2),
-            DoubleConv(50, 50, mode=2))
+        self.prep2_1 = SingleConv(150, 50, mode=0)
+        self.prep2_2 = DoubleConv(150, 50, mode=1)
+        self.prep2_3 = SingleConv(150, 50, mode=1)
 
         self.finalH = nn.Sequential(
             nn.Conv2d(150, 3, kernel_size=1, padding=0))

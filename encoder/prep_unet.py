@@ -4,6 +4,7 @@ import torch.nn as nn
 from config import GlobalConfig
 from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
+from network.single_conv import SingleConv
 import util
 
 class PrepNetwork_Unet(nn.Module):
@@ -63,15 +64,9 @@ class PrepNetwork_Unet(nn.Module):
         self.prep1_3 = nn.Sequential(
             DoubleConv(64, 50, mode=2),
             DoubleConv(50, 50, mode=2))
-        self.prep2_1 = nn.Sequential(
-            DoubleConv(150, 50, mode=0),
-            DoubleConv(50, 50, mode=0))
-        self.prep2_2 = nn.Sequential(
-            DoubleConv(150, 50, mode=1),
-            DoubleConv(50, 50, mode=1))
-        self.prep2_3 = nn.Sequential(
-            DoubleConv(150, 50, mode=2),
-            DoubleConv(50, 50, mode=2))
+        self.prep2_1 = SingleConv(150, 50, mode=0)
+        self.prep2_2 = DoubleConv(150, 50, mode=1)
+        self.prep2_3 = SingleConv(150, 50, mode=1)
 
 
     def forward(self, p):
