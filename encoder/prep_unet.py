@@ -7,11 +7,11 @@ from network.double_conv import DoubleConv
 import util
 
 class PrepNetwork_Unet(nn.Module):
-    def __init__(self,config=GlobalConfig()):
+    def __init__(self,input_channel, config=GlobalConfig()):
         super(PrepNetwork_Unet, self).__init__()
         self.config = config
         # Size: 256->128
-        self.Down1_conv = DoubleConv(3, 64)
+        self.Down1_conv = DoubleConv(input_channel, 64)
         self.Down1_pool = nn.MaxPool2d(2)
 
         # Size: 128->64
@@ -26,9 +26,18 @@ class PrepNetwork_Unet(nn.Module):
         self.Down4_conv = DoubleConv(256, 512)
         self.Down4_pool = nn.MaxPool2d(2)
 
-        self.Conv5 = nn.Sequential(
-            DoubleConv(512, 1024),
-            DoubleConv(1024, 1024),
+        # self.Conv5 = nn.Sequential(
+        #     DoubleConv(512, 1024),
+        #     DoubleConv(1024, 1024),
+        # )
+
+        self.hiding_1_1 = nn.Sequential(
+            DoubleConv(512, 512, mode=0),
+            DoubleConv(512, 512, mode=0),
+        )
+        self.hiding_1_2 = nn.Sequential(
+            DoubleConv(512, 512, mode=1),
+            DoubleConv(512, 512, mode=1),
         )
 
         # Size:16->32
@@ -44,9 +53,16 @@ class PrepNetwork_Unet(nn.Module):
         # Size:128->256
         self.Up1_convT = nn.ConvTranspose2d(128, 64, 2, stride=2)
         self.Up1_conv = DoubleConv(128, 64)
-        # 最后一个卷积层得到输出
-        #self.Conv_1x1 = nn.Conv2d(16, outchannel, kernel_size=1, stride=1, padding=0)
-        #self.final_conv = nn.Conv2d(6, 3, 1)
+        # Prep Network
+        self.prep_1 = nn.Sequential(
+            DoubleConv(64, 50,mode=0),
+            DoubleConv(50, 50,mode=0))
+        self.prep_2 = nn.Sequential(
+            DoubleConv(64, 50, mode=1),
+            DoubleConv(50, 50, mode=1))
+        self.prep_3 = nn.Sequential(
+            DoubleConv(64, 50, mode=2),
+            DoubleConv(50, 50, mode=2))
 
 
     def forward(self, p):
@@ -66,7 +82,9 @@ class PrepNetwork_Unet(nn.Module):
         down4_c = self.Down4_conv(down3_p)
         down4_p = self.Down4_pool(down4_c)
 
-        mid = self.Conv5(down4_p)
+        hid_1 = self.hiding_1_1(down4_p)
+        hid_2 = self.hiding_1_2(down4_p)
+        mid = torch.cat([hid_1, hid_2], dim=1)
 
         up4_convT = self.Up4_convT(mid)
         merge4 = torch.cat([up4_convT, down4_c], dim=1)
@@ -83,6 +101,9 @@ class PrepNetwork_Unet(nn.Module):
         up1_convT = self.Up1_convT(up2_conv)
         merge1 = torch.cat([up1_convT, down1_c], dim=1)
         up1_conv = self.Up1_conv(merge1)
-        #merge0 = torch.cat([up1_conv, p], dim=1)
-        #out = self.final_conv(merge0)
-        return up1_conv
+        # Prepare
+        p1 = self.prep_1(up1_conv)
+        p2 = self.prep_2(up1_conv)
+        p3 = self.prep_3(up1_conv)
+        mid = torch.cat((p1, p2, p3), 1)
+        return mid

@@ -2,13 +2,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from noise_layers.crop import random_float
+from config import GlobalConfig
 
 class Resize(nn.Module):
     """
     Resize the image. The target size is original size * resize_ratio
     """
-    def __init__(self, resize_ratio_range=(0.5,0.5), interpolation_method='nearest'):
+    def __init__(self, config=GlobalConfig(), resize_ratio_range=(0.5,0.5), interpolation_method='nearest'):
         super(Resize, self).__init__()
+        self.config = config
+        self.device = config.device
         self.resize_ratio_min = resize_ratio_range[0]
         self.resize_ratio_max = resize_ratio_range[1]
         self.interpolation_method = interpolation_method

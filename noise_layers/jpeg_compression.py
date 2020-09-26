@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from config import GlobalConfig
 
 def gen_filters(size_x: int, size_y: int, dct_or_idct_fun: callable) -> np.ndarray:
     tile_size_x = 8

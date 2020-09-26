@@ -18,8 +18,9 @@ class Cropout(nn.Module):
 
     def forward(self, embedded_image,cover_image=None):
 
-        if cover_image is not None:
-            assert embedded_image.shape == cover_image.shape
+        if cover_image is None:
+            cover_image = torch.zeros_like(embedded_image)
+        assert embedded_image.shape == cover_image.shape
         sum_attacked = 0
         cropout_mask = torch.zeros_like(embedded_image)
         block_height, block_width = int(embedded_image.shape[2] / 16), int(embedded_image.shape[3] / 16)
@@ -32,7 +33,7 @@ class Cropout(nn.Module):
         # 不断修改小块，直到修改面积至少为全图的50%
         while sum_attacked<self.config.min_required_block_portion:
             h_start, h_end, w_start, w_end, ratio = get_random_rectangle_inside(
-                image=embedded_image, height_ratio_range=(0.1, self.config.crop_size[0]), width_ratio_range=(0.1, self.config.crop_size[1]))
+                image=embedded_image, height_ratio_range=(0.05, self.config.crop_size[0]), width_ratio_range=(0.05, self.config.crop_size[1]))
             sum_attacked += ratio
             # 被修改的区域内赋值1, dims: batch channel height width
             cropout_mask[:, :, h_start:h_end, w_start:w_end] = 1
@@ -46,10 +47,9 @@ class Cropout(nn.Module):
 
         # 生成label：被修改区域对应的8*8小块赋值为1, height/width
 
-        if cover_image is not None:
-            tampered_image = embedded_image * (1-cropout_mask) + cover_image * cropout_mask
-        else:
-            tampered_image = embedded_image * (1-cropout_mask)
+
+        tampered_image = embedded_image * (1-cropout_mask) + cover_image * cropout_mask
+
 
         cropout_label = cropout_mask[:,0,:,:]
         # cropout_label = cropout_label.unsqueeze(1)

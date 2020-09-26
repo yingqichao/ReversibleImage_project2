@@ -1,14 +1,15 @@
+import cv2
 import numpy as np
+import numpy.random as random
 
 # 随机数置乱
+img = cv2.imread("F:\\ReversibleImage_project2\\sample\\train_coco\\train\\000000000009.jpg",1)
 
-for time in range(3):
-    idx = [i for i in range(256*256)]
-    np.random.seed(0)
-    np.random.shuffle(idx)
-    np.reshape(idx,[256,256])
 
-    print(idx[:100])
+idx = [i for i in range(256*256)]
+np.random.seed(0)
+np.random.shuffle(idx)
+print(idx[:100])
 
 values = [i for i in range(256*256)]
 new_values = np.zeros([256*256,1])

@@ -11,8 +11,8 @@ class DoubleConv(nn.Module):
             kernel_size_1, padding_size_1 = 3, 1
             kernel_size_2, padding_size_2 = 3, 1
         elif mode==1:
-            kernel_size_1, padding_size_1 = 5, 2
-            kernel_size_2, padding_size_2 = 3, 1
+            kernel_size_1, padding_size_1 = 4, 1
+            kernel_size_2, padding_size_2 = 4, 2
         elif mode==2:
             kernel_size_1, padding_size_1 = 5, 2
             kernel_size_2, padding_size_2 = 5, 2

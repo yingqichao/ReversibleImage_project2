@@ -3,8 +3,8 @@ import torch
 class GlobalConfig():
 
     def __init__(self):
-        self.Height = 224
-        self.Width = 224
+        self.Height = 256
+        self.Width = 256
         self.block_size = 16
         self.decoder_channels = 128
         self.min_required_block = 64
@@ -16,10 +16,10 @@ class GlobalConfig():
         self.num_classes = 1
 
         """ If Skip Training """
-        self.skipPreTraining = False
-        self.skipMainTraining = True
+        self.skipPreTraining = True
+        self.skipMainTraining = False
         self.skipLocalizerTraining = True
-        self.loadfromEpochNum = 50
+        self.loadfromEpochNum = 20
 
         """ Hyper Params """
         self.hyper_localizer = 0.1
@@ -31,7 +31,7 @@ class GlobalConfig():
         self.hyper_discriminator = 0.001
         self.hyper_recovery = 1
         self.num_epochs = 50
-        self.train_batch_size = 4
+        self.train_batch_size = 2
         self.test_batch_size = 1
 
         self.learning_rate = 0.0001

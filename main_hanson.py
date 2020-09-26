@@ -160,14 +160,14 @@ if __name__ =='__main__':
                 data, _ = train_batch
                 train_covers = data.to(device)
                 losses, output = net.train_on_batch(train_covers)
-                x_hidden, x_recover = output
+                x_hidden, x_recover, x_attacked = output
                 # losses
                 train_loss_discriminator_enc.append(losses['loss_discriminator_enc'])
                 train_loss_discriminator_recovery.append(losses['loss_discriminator_recovery'])
                 train_loss_localization.append(losses['loss_localization'])
                 train_loss_cover.append(losses['loss_cover'])
                 train_loss_recover.append(losses['loss_recover'])
-                if idx % 4 == 3:
+                if idx % 2 == 1:
                     str = 'Net 1 Epoch {0}/{1} Training: Batch {2}/{3}. Total Loss {4:.4f}, Localization Loss {5:.4f}, ' \
                           'Cover Loss {6:.4f}, Recover Loss {7:.4f}, Adversial Cover Loss {8:.4f}, Adversial Recovery Loss {9:.4f}' \
                         .format(epoch, num_epochs, idx + 1, len(train_loader), losses['loss_sum'],
@@ -177,19 +177,24 @@ if __name__ =='__main__':
                     print(str)
                 if idx % 128 == 127:
                     for i in range(x_recover.shape[0]):
+                        util.save_images(x_attacked[i].cpu(),
+                                         'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                         './Images/attacked',
+                                         std=config.std,
+                                         mean=config.mean)
                         util.save_images(x_recover[i].cpu(),
                                          'epoch-{0}-recovery-batch-{1}-{2}.png'.format(epoch, idx, i),
-                                         './Images/main/recovery',
+                                         './Images/recovery',
                                          std=config.std,
                                          mean=config.mean)
                         util.save_images(x_hidden[i].cpu(),
                                          'epoch-{0}-hidden-batch-{1}-{2}.png'.format(epoch, idx, i),
-                                         './Images/main/hidden',
+                                         './Images/hidden',
                                          std=config.std,
                                          mean=config.mean)
                         util.save_images(train_covers[i].cpu(),
                                          'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
-                                         './Images/main/original',
+                                         './Images/cover',
                                          std=config.std,
                                          mean=config.mean)
 
@@ -258,9 +263,9 @@ if __name__ =='__main__':
         util.plt_plot(hist_loss_recover)
         util.plt_plot(hist_loss_discriminator_enc)
         util.plt_plot(hist_loss_discriminator_recovery)
-    else:
-        net.load_state_dict_EncDec(torch.load(MODELS_PATH + 'Epoch N'+config.loadfromEpochNum))
-        net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
+    # else:
+    #     net.load_state_dict_pretrain(MODELS_PATH)
+        # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
     if not config.skipMainTraining:
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
