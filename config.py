@@ -25,9 +25,9 @@ class GlobalConfig():
         self.hyper_localizer = 0.1
         self.useVgg = False
         if self.useVgg:
-            self.hyper_cover = 1
+            self.hyper_cover = 0.7
         else:
-            self.hyper_cover = 1
+            self.hyper_cover = 0.7
         self.hyper_discriminator = 0.001
         self.hyper_recovery = 1
         self.num_epochs = 50

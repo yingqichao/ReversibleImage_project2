@@ -1,24 +1,19 @@
 # %matplotlib inline
 import torch
 import torch.nn as nn
-from encoder.encoder_decoder import EncoderDecoder
-from config import GlobalConfig
-from localizer.localizer import LocalizeNetwork
-from localizer.localizer_noPool import LocalizeNetwork_noPool
 
-from noise_layers.cropout import Cropout
-from noise_layers.jpeg_compression import JpegCompression
-from noise_layers.resize import Resize
-from noise_layers.gaussian import Gaussian
-from network.discriminator import Discriminator
-from loss.vgg_loss import VGGLoss
-from encoder.prep_unet import PrepNetwork_Unet
-from decoder.revert_unet import Revert_Unet
-from DeepSteg import Net
 from DeepSteg import HidingNetwork
+# from encoder.encoder_decoder import EncoderDecoder
+from config import GlobalConfig
+from decoder.revert_unet import Revert_Unet
+from encoder.prep_unet import PrepNetwork_Unet
+from loss.vgg_loss import VGGLoss
+from network.discriminator import Discriminator
 from network.reveal import RevealNetwork
-from encoder.pretrain_deepsteg import Pretrain_deepsteg
+from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
+from noise_layers.jpeg_compression import JpegCompression
+
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):

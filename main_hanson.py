@@ -6,7 +6,7 @@ import torch
 import torchvision.transforms as transforms
 from torch import utils
 from torchvision import datasets
-from network.localize_net import Localize_hanson
+# from network.localize_net import Localize_hanson
 import util
 from config import GlobalConfig
 from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson

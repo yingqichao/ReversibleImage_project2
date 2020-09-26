@@ -54,14 +54,23 @@ class Revert_Unet(nn.Module):
         self.Up1_convT = nn.ConvTranspose2d(128, 64, 2, stride=2)
         self.Up1_conv = DoubleConv(128, 64)
         # Prep Network
-        self.prep_1 = nn.Sequential(
+        self.prep1_1 = nn.Sequential(
             DoubleConv(64+3, 50, mode=0),
             DoubleConv(50, 50, mode=0))
-        self.prep_2 = nn.Sequential(
+        self.prep1_2 = nn.Sequential(
             DoubleConv(64+3, 50, mode=1),
             DoubleConv(50, 50, mode=1))
-        self.prep_3 = nn.Sequential(
+        self.prep1_3 = nn.Sequential(
             DoubleConv(64+3, 50, mode=2),
+            DoubleConv(50, 50, mode=2))
+        self.prep2_1 = nn.Sequential(
+            DoubleConv(150, 50, mode=0),
+            DoubleConv(50, 50, mode=0))
+        self.prep2_2 = nn.Sequential(
+            DoubleConv(150, 50, mode=1),
+            DoubleConv(50, 50, mode=1))
+        self.prep2_3 = nn.Sequential(
+            DoubleConv(150, 50, mode=2),
             DoubleConv(50, 50, mode=2))
 
         self.finalH = nn.Sequential(
@@ -106,9 +115,13 @@ class Revert_Unet(nn.Module):
         up1_conv = self.Up1_conv(merge1)
         up_cat_origin = torch.cat([up1_conv, ori_image], dim=1)
         # Prepare
-        p1 = self.prep_1(up_cat_origin)
-        p2 = self.prep_2(up_cat_origin)
-        p3 = self.prep_3(up_cat_origin)
+        p1 = self.prep1_1(up_cat_origin)
+        p2 = self.prep1_2(up_cat_origin)
+        p3 = self.prep1_3(up_cat_origin)
         mid = torch.cat((p1, p2, p3), 1)
-        out = self.finalH(mid)
+        p4 = self.prep2_1(mid)
+        p5 = self.prep2_2(mid)
+        p6 = self.prep2_3(mid)
+        mid2 = torch.cat((p4, p5, p6), 1)
+        out = self.finalH(mid2)
         return out
