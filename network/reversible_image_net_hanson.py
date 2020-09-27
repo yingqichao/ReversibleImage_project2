@@ -179,17 +179,15 @@ class ReversibleImageNetwork_hanson:
         # }
         # return losses, (x_hidden, x_recover.mul(mask) + Cover.mul(1 - mask), pred_label, cropout_label)
 
-    def save_state_dict_PrepRevert(self, path):
+    def save_state_dict_all(self, path):
         torch.save(self.revert_network.state_dict(), path + '_revert_network.pkl')
         print("Successfully Saved: " + path + '_revert_network.pkl')
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
-
-    def save_state_dict_EncDec(self, path):
-        torch.save(self.encoder_decoder.state_dict(), path + '_encoder_decoder_network.pkl')
+        torch.save(self.hiding_network.state_dict(), path + '_hiding_network.pkl')
         print("Successfully Saved: " + path + '_encoder_decoder_network.pkl')
-
-    def save_state_dict_Discriminator(self, path):
+        torch.save(self.reveal_network.state_dict(), path + '_reveal_network.pkl')
+        print("Successfully Saved: " + path + '_encoder_decoder_network.pkl')
         torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
         print("Successfully Saved: " + path + '_discriminator_network.pkl')
 

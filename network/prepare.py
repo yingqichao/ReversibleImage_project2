@@ -1,49 +1,24 @@
 # %matplotlib inline
 import torch
 import torch.nn as nn
+from network.double_conv import DoubleConv
 
 # Preparation Network (2 conv layers)
 class PrepNetwork(nn.Module):
     def __init__(self):
         super(PrepNetwork, self).__init__()
         self.initialP3 = nn.Sequential(
-            nn.Conv2d(3, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU())
+            DoubleConv(3, 50, mode=0),
+            DoubleConv(50, 50, mode=0))
         self.initialP4 = nn.Sequential(
-            nn.Conv2d(3, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU())
+            DoubleConv(3, 50, mode=1),
+            DoubleConv(50, 50, mode=1))
         self.initialP5 = nn.Sequential(
-            nn.Conv2d(3, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU())
-        self.finalP3 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=3, padding=1),
-            nn.ReLU())
-        self.finalP4 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU())
-        self.finalP5 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=5, padding=2),
-            nn.ReLU())
+            DoubleConv(3, 50, mode=2),
+            DoubleConv(50, 50, mode=2))
+        self.finalP3 = DoubleConv(150, 50, mode=0)
+        self.finalP4 = DoubleConv(150, 50, mode=1)
+        self.finalP5 = DoubleConv(150, 50, mode=2)
 
     def forward(self, p):
         p1 = self.initialP3(p)

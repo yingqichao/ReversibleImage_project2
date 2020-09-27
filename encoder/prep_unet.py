@@ -64,9 +64,9 @@ class PrepNetwork_Unet(nn.Module):
         self.prep1_3 = nn.Sequential(
             DoubleConv(64, 50, mode=2),
             DoubleConv(50, 50, mode=2))
-        self.prep2_1 = SingleConv(150, 50, mode=0)
+        self.prep2_1 = DoubleConv(150, 50, mode=0)
         self.prep2_2 = DoubleConv(150, 50, mode=1)
-        self.prep2_3 = SingleConv(150, 50, mode=1)
+        self.prep2_3 = DoubleConv(150, 50, mode=2)
 
 
     def forward(self, p):

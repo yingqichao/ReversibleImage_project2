@@ -17,9 +17,9 @@ class HidingNetwork(nn.Module):
         self.initialH5 = nn.Sequential(
             DoubleConv(153, 50, mode=2),
             DoubleConv(50, 50, mode=2))
-        self.finalH3 = SingleConv(150, 50, mode=0)
+        self.finalH3 = DoubleConv(150, 50, mode=0)
         self.finalH4 = DoubleConv(150, 50, mode=1)
-        self.finalH5 = SingleConv(150, 50, mode=1)
+        self.finalH5 = DoubleConv(150, 50, mode=2)
         self.finalH = nn.Sequential(
             nn.Conv2d(150, 3, kernel_size=1, padding=0))
 

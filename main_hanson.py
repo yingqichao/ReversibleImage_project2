@@ -207,7 +207,7 @@ if __name__ =='__main__':
             hist_loss_cover.append(mean_train_loss_cover)
             hist_loss_localization.append(mean_train_loss_localization)
             hist_loss_recover.append(mean_train_loss_recover)
-            net.save_state_dict_PrepRevert(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
+            net.save_state_dict_all(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
             # Prints epoch average loss
             print('Epoch [{0}/{1}], Average_loss: Localization Loss {2:.4f}, Cover Loss {3:.4f}, Recover Loss {4:.4f}, '
                   'Adversial Cover Loss {5:.4f}, Adversial Recovery Loss {6:.4f}'.format(

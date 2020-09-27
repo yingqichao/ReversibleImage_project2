@@ -1,7 +1,7 @@
 # %matplotlib inline
 import torch
 import torch.nn as nn
-
+from network.double_conv import DoubleConv
 
 # Reveal Network (2 conv layers)
 class RevealNetwork(nn.Module):
@@ -9,43 +9,17 @@ class RevealNetwork(nn.Module):
         super(RevealNetwork, self).__init__()
         self.require_last_layer = require_last_layer
         self.initialR3 = nn.Sequential(
-            nn.Conv2d(3, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=3, padding=1),
-            nn.ReLU())
+            DoubleConv(3, 50, mode=0),
+            DoubleConv(50, 50, mode=0))
         self.initialR4 = nn.Sequential(
-            nn.Conv2d(3, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU())
+            DoubleConv(3, 50, mode=1),
+            DoubleConv(50, 50, mode=1))
         self.initialR5 = nn.Sequential(
-            nn.Conv2d(3, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=5, padding=2),
-            nn.ReLU())
-        self.finalR3 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=3, padding=1),
-            nn.ReLU())
-        self.finalR4 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=4, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(50, 50, kernel_size=4, padding=2),
-            nn.ReLU())
-        self.finalR5 = nn.Sequential(
-            nn.Conv2d(150, 50, kernel_size=5, padding=2),
-            nn.ReLU())
+            DoubleConv(3, 50, mode=2),
+            DoubleConv(50, 50, mode=2))
+        self.finalR3 = DoubleConv(150, 50, mode=0)
+        self.finalR4 = DoubleConv(150, 50, mode=1)
+        self.finalR5 = DoubleConv(150, 50, mode=2)
         if self.require_last_layer:
             self.finalR = nn.Sequential(
                 nn.Conv2d(150, 3, kernel_size=1, padding=0))
