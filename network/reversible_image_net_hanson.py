@@ -185,36 +185,59 @@ class ReversibleImageNetwork_hanson:
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
         torch.save(self.hiding_network.state_dict(), path + '_hiding_network.pkl')
-        print("Successfully Saved: " + path + '_encoder_decoder_network.pkl')
+        print("Successfully Saved: " + path + '_hiding_network.pkl')
         torch.save(self.reveal_network.state_dict(), path + '_reveal_network.pkl')
-        print("Successfully Saved: " + path + '_encoder_decoder_network.pkl')
+        print("Successfully Saved: " + path + '_reveal_network.pkl')
         torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
         print("Successfully Saved: " + path + '_discriminator_network.pkl')
 
-    def load_state_dict_Discriminator(self,path):
+    def save_model(self,path):
+        torch.save(self.revert_network, path + '_revert_network.pth')
+        print("Successfully Saved: " + path + '_revert_network.pth')
+        torch.save(self.preprocessing_network, path + '_prep_network.pth')
+        print("Successfully Saved: " + path + '_prep_network.pth')
+        torch.save(self.hiding_network, path + '_hiding_network.pth')
+        print("Successfully Saved: " + path + '_hiding_network.pth')
+        torch.save(self.reveal_network, path + '_reveal_network.pth')
+        print("Successfully Saved: " + path + '_reveal_network.pth')
+        torch.save(self.discriminator, path + '_discriminator_network.pth')
+        print("Successfully Saved: " + path + '_discriminator_network.pth')
+
+    def load_state_dict_all(self,path):
         self.discriminator.load_state_dict(torch.load(path + '_discriminator_network.pkl'))
         print("Successfully Loaded: " + path + '_discriminator_network.pkl')
-
-    def load_state_dict_PrepRevert(self,path):
         self.preprocessing_network.load_state_dict(torch.load(path + '_prep_network.pkl'))
         print("Successfully Loaded: " + path + '_prep_network.pkl')
         self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'))
         print("Successfully Loaded: " + path + '_revert_network.pkl')
+        self.hiding_network.load_state_dict(torch.load(path + '_hiding_network.pkl'))
+        print("Successfully Loaded: " + path + '_hiding_network.pkl')
+        self.reveal_network.load_state_dict(torch.load(path + '_reveal_network.pkl'))
+        print("Successfully Loaded: " + path + '_reveal_network.pkl')
 
-    def load_state_dict_EncDec(self,path):
-        self.encoder_decoder.load_state_dict(torch.load(path + '_encoder_decoder_network.pkl'))
-        print("Successfully Loaded: " + path + '_encoder_decoder_network.pkl')
+    def load_model(self,path):
+        self.discriminator.load(torch.load(path + '_discriminator_network.pth'))
+        print("Successfully Loaded: " + path + '_discriminator_network.pth')
+        self.preprocessing_network.load(torch.load(path + '_prep_network.pth'))
+        print("Successfully Loaded: " + path + '_prep_network.pth')
+        self.revert_network.load(torch.load(path + '_revert_network.pth'))
+        print("Successfully Loaded: " + path + '_revert_network.pth')
+        self.hiding_network.load(torch.load(path + '_hiding_network.pth'))
+        print("Successfully Loaded: " + path + '_hiding_network.pth')
+        self.reveal_network.load(torch.load(path + '_reveal_network.pth'))
+        print("Successfully Loaded: " + path + '_reveal_network.pth')
 
-    def load_state_dict_pretrain(self, path):
-        # state = torch.load(path)
-        # load_state = {k: v for k, v in state.items() if k not in state_list}
-        # print(state.items())
-        # model_state = model.state_dict()
 
-        # model_state.update(load_state)
-        self.hiding_network.load_state_dict(torch.load(path + '_pretrain_hiding_Epoch N20.pkl'))
-        self.reveal_network.load_state_dict(torch.load(path + '_pretrain_reveal_Epoch N20.pkl'))
-        print("Successfully Loaded: "+path)
+    # def load_state_dict_pretrain(self, path):
+    #     # state = torch.load(path)
+    #     # load_state = {k: v for k, v in state.items() if k not in state_list}
+    #     # print(state.items())
+    #     # model_state = model.state_dict()
+    #
+    #     # model_state.update(load_state)
+    #     self.hiding_network.load_state_dict(torch.load(path + '_pretrain_hiding_Epoch N20.pkl'))
+    #     self.reveal_network.load_state_dict(torch.load(path + '_pretrain_reveal_Epoch N20.pkl'))
+    #     print("Successfully Loaded: "+path)
 
     # def pretrain_on_batch(self, Cover, Another):
     #     """

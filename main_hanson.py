@@ -207,7 +207,7 @@ if __name__ =='__main__':
             hist_loss_cover.append(mean_train_loss_cover)
             hist_loss_localization.append(mean_train_loss_localization)
             hist_loss_recover.append(mean_train_loss_recover)
-            net.save_state_dict_all(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
+            net.save_model(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
             # Prints epoch average loss
             print('Epoch [{0}/{1}], Average_loss: Localization Loss {2:.4f}, Cover Loss {3:.4f}, Recover Loss {4:.4f}, '
                   'Adversial Cover Loss {5:.4f}, Adversial Recovery Loss {6:.4f}'.format(
@@ -225,7 +225,7 @@ if __name__ =='__main__':
 
     # ------------------------------------ Begin ---------------------------------------
     # Creates net object
-    net = ReversibleImageNetwork_hanson(username="hanson", config=config) #.to(device)
+    net = ReversibleImageNetwork_hanson(username="hanson", config=config)
 
     # Creates training set
     train_loader = torch.utils.data.DataLoader(
@@ -266,7 +266,9 @@ if __name__ =='__main__':
     # else:
     #     net.load_state_dict_pretrain(MODELS_PATH)
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
+
     if not config.skipMainTraining:
+        # net.load_model(MODELS_PATH + 'Epoch N5')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
         # Plot loss through epochs
@@ -274,8 +276,9 @@ if __name__ =='__main__':
         util.plt_plot(hist_loss_recover)
         util.plt_plot(hist_loss_discriminator_enc)
         util.plt_plot(hist_loss_discriminator_recovery)
-    else:
-        net.load_state_dict_PrepRevert(torch.load(MODELS_PATH + 'Epoch N'+config.loadfromEpochNum))
+    # else:
+    #     net.load_state_dict_PrepRevert(torch.load(MODELS_PATH + 'Epoch N'+config.loadfromEpochNum))
+
     # if not config.skipLocalizerTraining:
     #     net_localize = Localize_hanson()
     #     specific_loader = ImageLoader()
