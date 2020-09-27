@@ -216,15 +216,15 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Loaded: " + path + '_reveal_network.pkl')
 
     def load_model(self,path):
-        self.discriminator.load(torch.load(path + '_discriminator_network.pth'))
+        self.discriminator = torch.load(path + '_discriminator_network.pth')
         print("Successfully Loaded: " + path + '_discriminator_network.pth')
-        self.preprocessing_network.load(torch.load(path + '_prep_network.pth'))
+        self.preprocessing_network = torch.load(path + '_prep_network.pth')
         print("Successfully Loaded: " + path + '_prep_network.pth')
-        self.revert_network.load(torch.load(path + '_revert_network.pth'))
+        self.revert_network = torch.load(path + '_revert_network.pth')
         print("Successfully Loaded: " + path + '_revert_network.pth')
-        self.hiding_network.load(torch.load(path + '_hiding_network.pth'))
+        self.hiding_network = torch.load(path + '_hiding_network.pth')
         print("Successfully Loaded: " + path + '_hiding_network.pth')
-        self.reveal_network.load(torch.load(path + '_reveal_network.pth'))
+        self.reveal_network = torch.load(path + '_reveal_network.pth')
         print("Successfully Loaded: " + path + '_reveal_network.pth')
 
 
