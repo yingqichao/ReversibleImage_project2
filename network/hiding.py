@@ -9,19 +9,19 @@ class HidingNetwork(nn.Module):
     def __init__(self):
         super(HidingNetwork, self).__init__()
         self.initialH3 = nn.Sequential(
-            DoubleConv(96+3, 50, mode=0),
-            DoubleConv(50, 50, mode=0))
+            DoubleConv(96+3, 64, mode=0),
+            DoubleConv(64, 64, mode=0))
         self.initialH4 = nn.Sequential(
-            DoubleConv(96+3, 50, mode=1),
-            DoubleConv(50, 50, mode=1))
+            DoubleConv(96+3, 64, mode=1),
+            DoubleConv(64, 64, mode=1))
         self.initialH5 = nn.Sequential(
-            DoubleConv(96+3, 50, mode=2),
-            DoubleConv(50, 50, mode=2))
-        self.finalH3 = DoubleConv(150, 50, mode=0)
-        self.finalH4 = DoubleConv(150, 50, mode=1)
-        self.finalH5 = DoubleConv(150, 50, mode=2)
+            DoubleConv(96+3, 64, mode=2),
+            DoubleConv(64, 64, mode=2))
+        self.finalH3 = DoubleConv(192, 64, mode=0)
+        self.finalH4 = DoubleConv(192, 64, mode=1)
+        self.finalH5 = DoubleConv(192, 64, mode=2)
         self.finalH = nn.Sequential(
-            nn.Conv2d(150, 3, kernel_size=1, padding=0))
+            nn.Conv2d(192, 3, kernel_size=1, padding=0))
 
     def forward(self, h):
         h1 = self.initialH3(h)

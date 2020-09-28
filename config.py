@@ -26,11 +26,12 @@ class GlobalConfig():
         self.useVgg = False
         if self.useVgg:
             self.hyper_cover = 1
-            self.hyper_recovery = 2
+            self.hyper_recovery = 1
         else:
             self.hyper_cover = 1
-            self.hyper_recovery = 2
+            self.hyper_recovery = 1
         self.hyper_discriminator = 0.001
+        self.hyper_intermediate = 1
 
         self.num_epochs = 50
         self.train_batch_size = 4

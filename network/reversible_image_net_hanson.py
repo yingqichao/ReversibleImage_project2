@@ -85,62 +85,68 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_revert_network.zero_grad()
             self.optimizer_discrim.zero_grad()
             Secret_processed = self.preprocessing_network(Cover)
+            """ Train Encoder Decoder Ahead of Transform """
+            Secret_watch = Secret_processed.detach()
+            cat_watch = torch.cat((Secret_watch, Cover), 1)
+            Marked_watch = self.hiding_network(cat_watch)
+            Attacked_watch = self.jpeg_layer(Marked_watch)
+            Pre_Extracted = self.reveal_network(Attacked_watch)
+            if self.config.useVgg == False:
+                loss_cover = self.mse_loss(Marked_watch, Cover)
+            else:
+                #loss_intermediate = self.mse_loss(Secret_processed, Extracted)
+                vgg_on_cov = self.vgg_loss(Cover)
+                vgg_on_enc = self.vgg_loss(Marked_watch)
+                loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
+            loss_intermediate = self.mse_loss(Secret_watch, Pre_Extracted)
+            loss_enc_dec = loss_intermediate * self.config.hyper_intermediate + loss_cover * self.config.hyper_cover
+            loss_enc_dec.backward()
+            self.optimizer_hiding_network.step()
+            self.optimizer_reveal_network.step()
+            """Continue"""
             cat = torch.cat((Secret_processed, Cover), 1)
             Marked = self.hiding_network(cat)
-            # x_gaussian = self.gaussian(Marked)
-            # x_1_resize = self.resize_layer(x_1_gaussian)
             Attacked = self.jpeg_layer(Marked)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
             Extracted = self.reveal_network(Cropped_out)
-
             Recovered = self.revert_network(Extracted, Cropped_out)
             """ Discriminate """
-            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
-            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
-            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
-            d_on_cover = self.discriminator(Cover)
-            d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
-            d_loss_on_cover.backward()
-            d_on_encoded = self.discriminator(Marked.detach())
-            # d_on_recovered = self.discriminator(Recovered.detach())
-            d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
-            # d_loss_on_recovered = self.bce_with_logits_loss(d_on_recovered, d_target_label_encoded)
-
-            d_loss_on_encoded.backward()
-            self.optimizer_discrim.step()
-            # x_1_crop, cropout_label, _ = self.cropout_layer(x_hidden, Cover)
-            # x_1_gaussian = self.gaussian(x_1_crop)
-            # x_1_resize = self.resize_layer(x_1_gaussian)
-            # x_1_attack = self.jpeg_layer(x_1_crop)
-            # pred_label = self.localizer(x_1_attack.detach())
-            # loss_localization = self.bce_with_logits_loss(pred_label, cropout_label)
-            # loss_localization.backward()
-            # self.optimizer_localizer.step()
+            # d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
+            # d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
+            # g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
+            # d_on_cover = self.discriminator(Cover)
+            # d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
+            # d_loss_on_cover.backward()
+            # d_on_encoded = self.discriminator(Marked.detach())
+            # # d_on_recovered = self.discriminator(Recovered.detach())
+            # d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
+            # # d_loss_on_recovered = self.bce_with_logits_loss(d_on_recovered, d_target_label_encoded)
+            #
+            # d_loss_on_encoded.backward()
+            # self.optimizer_discrim.step()
             """ Train PrepNetwork and RevertNetwork """
             # pred_again_label = self.localizer(x_1_attack)
             # loss_localization_again = self.bce_with_logits_loss(pred_again_label, cropout_label)
             if self.config.useVgg == False:
-                loss_cover = self.mse_loss(Marked, Cover)
+                # loss_cover = self.mse_loss(Marked, Cover)
                 loss_recover = self.mse_loss(Recovered, Cover)
             else:
                 vgg_on_cov = self.vgg_loss(Cover)
-                vgg_on_enc = self.vgg_loss(Marked)
-                loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
+                # vgg_on_enc = self.vgg_loss(Marked)
+                # loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
                 vgg_on_recovery = self.vgg_loss(Recovered)
                 loss_recover = self.mse_loss(vgg_on_cov, vgg_on_recovery)
-            d_on_encoded_for_enc = self.discriminator(Marked)
-            g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
+            # d_on_encoded_for_enc = self.discriminator(Marked)
+            # g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
             # d_on_encoded_for_recovery = self.discriminator(Recovered)
             # g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
             """ Total loss for EncoderDecoder """
-            loss_enc_dec =  loss_recover * self.config.hyper_recovery + loss_cover * self.config.hyper_cover + g_loss_adv_enc * self.config.hyper_discriminator
+            loss_recover *= self.config.hyper_recovery
                             # + loss_cover * self.config.hyper_cover\
                            # + loss_localization_again * self.config.hyper_localizer\
                             # + g_loss_adv_enc * self.config.hyper_discriminator \
-            loss_enc_dec.backward()
+            loss_recover.backward()
             self.optimizer_preprocessing_network.step()
-            self.optimizer_hiding_network.step()
-            self.optimizer_reveal_network.step()
             self.optimizer_revert_network.step()
 
         losses = {
@@ -148,10 +154,22 @@ class ReversibleImageNetwork_hanson:
             'loss_localization': 0, #loss_localization.item(),
             'loss_cover': loss_cover.item(),
             'loss_recover': loss_recover.item(),
-            'loss_discriminator_enc': g_loss_adv_enc.item(),
+            'loss_discriminator_enc': 0,#g_loss_adv_enc.item(),
             'loss_discriminator_recovery': 0 # g_loss_adv_recovery.item()
         }
+        # Test
+        print("Loss Intermediate: "+str(loss_intermediate.item()))
         return losses, (Marked, Recovered, Cropped_out)
+
+        # """ Localizer (deleted) """
+        # x_1_crop, cropout_label, _ = self.cropout_layer(x_hidden, Cover)
+        # x_1_gaussian = self.gaussian(x_1_crop)
+        # x_1_resize = self.resize_layer(x_1_gaussian)
+        # x_1_attack = self.jpeg_layer(x_1_crop)
+        # pred_label = self.localizer(x_1_attack.detach())
+        # loss_localization = self.bce_with_logits_loss(pred_label, cropout_label)
+        # loss_localization.backward()
+        # self.optimizer_localizer.step()
 
     def validate_on_batch(self, Cover, Another):
         pass
