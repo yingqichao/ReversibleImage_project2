@@ -3,16 +3,13 @@ import torch
 import torch.nn as nn
 from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from localizer.localizer import LocalizeNetwork
-from localizer.localizer_noPool import LocalizeNetwork_noPool
 from noise_layers.cropout import Cropout
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.resize import Resize
 from noise_layers.gaussian import Gaussian
-from network.discriminator import Discriminator
+from discriminator.discriminator import Discriminator
 from loss.vgg_loss import VGGLoss
-import torchvision.transforms.functional as TF
-import util
+
 
 def flip(x, dim):
     indices = [slice(None)] * x.dim()

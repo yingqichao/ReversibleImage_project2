@@ -5,9 +5,9 @@ from network.double_conv import DoubleConv
 
 # Reveal Network (2 conv layers)
 class RevealNetwork(nn.Module):
-    def __init__(self, require_last_layer=False):
+    def __init__(self):
         super(RevealNetwork, self).__init__()
-        self.require_last_layer = require_last_layer
+        # input channel: 3, output channel: 96
         self.initialR3 = nn.Sequential(
             DoubleConv(3, 50, mode=0),
             DoubleConv(50, 50, mode=0))
@@ -20,9 +20,9 @@ class RevealNetwork(nn.Module):
         self.finalR3 = DoubleConv(150, 50, mode=0)
         self.finalR4 = DoubleConv(150, 50, mode=1)
         self.finalR5 = DoubleConv(150, 50, mode=2)
-        if self.require_last_layer:
-            self.finalR = nn.Sequential(
-                nn.Conv2d(150, 3, kernel_size=1, padding=0))
+
+        self.finalR = nn.Sequential(
+            nn.Conv2d(150, 96, kernel_size=1, padding=0))
 
     def forward(self, r):
         r1 = self.initialR3(r)
@@ -33,6 +33,5 @@ class RevealNetwork(nn.Module):
         r5 = self.finalR4(mid)
         r6 = self.finalR5(mid)
         mid2 = torch.cat((r4, r5, r6), 1)
-        if self.require_last_layer:
-            mid2 = self.finalR(mid2)
-        return mid2
+        out = self.finalR(mid2)
+        return out

@@ -6,13 +6,15 @@ from DeepSteg import HidingNetwork
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
 from decoder.revert_unet import Revert_Unet
+from decoder.revert import Revert
 from encoder.prep_unet import PrepNetwork_Unet
 from loss.vgg_loss import VGGLoss
-from network.discriminator import Discriminator
 from network.reveal import RevealNetwork
 from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.jpeg_compression import JpegCompression
+from discriminator.discriminator_dcgan import Discriminator_dcgan
+from discriminator.discriminator import Discriminator
 
 
 class ReversibleImageNetwork_hanson:
@@ -28,7 +30,7 @@ class ReversibleImageNetwork_hanson:
         self.hiding_network = HidingNetwork().to(self.device)
         self.reveal_network = RevealNetwork().to(self.device)
         """ Recovery Network """
-        self.revert_network = Revert_Unet(input_channel=150, config=config).to(self.device)
+        self.revert_network = Revert(config=config).to(self.device)
         """Localize Network"""
         # if self.username=="qichao":
         #     self.localizer = LocalizeNetwork(config).to(self.device)
@@ -100,11 +102,11 @@ class ReversibleImageNetwork_hanson:
             d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
             d_loss_on_cover.backward()
             d_on_encoded = self.discriminator(Marked.detach())
-            d_on_recovered = self.discriminator(Recovered.detach())
+            # d_on_recovered = self.discriminator(Recovered.detach())
             d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
-            d_loss_on_recovered = self.bce_with_logits_loss(d_on_recovered, d_target_label_encoded)
-            d_loss_on_fake_total = (d_loss_on_encoded + d_loss_on_recovered) / 2
-            d_loss_on_fake_total.backward()
+            # d_loss_on_recovered = self.bce_with_logits_loss(d_on_recovered, d_target_label_encoded)
+
+            d_loss_on_encoded.backward()
             self.optimizer_discrim.step()
             # x_1_crop, cropout_label, _ = self.cropout_layer(x_hidden, Cover)
             # x_1_gaussian = self.gaussian(x_1_crop)
@@ -128,11 +130,10 @@ class ReversibleImageNetwork_hanson:
                 loss_recover = self.mse_loss(vgg_on_cov, vgg_on_recovery)
             d_on_encoded_for_enc = self.discriminator(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
-            d_on_encoded_for_recovery = self.discriminator(Recovered)
-            g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
+            # d_on_encoded_for_recovery = self.discriminator(Recovered)
+            # g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
             """ Total loss for EncoderDecoder """
-            loss_enc_dec =  g_loss_adv_recovery * self.config.hyper_discriminator + loss_recover * self.config.hyper_recovery \
-                            + loss_cover * self.config.hyper_cover + g_loss_adv_enc * self.config.hyper_discriminator
+            loss_enc_dec =  loss_recover * self.config.hyper_recovery + loss_cover * self.config.hyper_cover + g_loss_adv_enc * self.config.hyper_discriminator
                             # + loss_cover * self.config.hyper_cover\
                            # + loss_localization_again * self.config.hyper_localizer\
                             # + g_loss_adv_enc * self.config.hyper_discriminator \
@@ -148,7 +149,7 @@ class ReversibleImageNetwork_hanson:
             'loss_cover': loss_cover.item(),
             'loss_recover': loss_recover.item(),
             'loss_discriminator_enc': g_loss_adv_enc.item(),
-            'loss_discriminator_recovery': g_loss_adv_recovery.item()
+            'loss_discriminator_recovery': 0 # g_loss_adv_recovery.item()
         }
         return losses, (Marked, Recovered, Cropped_out)
 

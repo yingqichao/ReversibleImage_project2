@@ -5,113 +5,120 @@ from config import GlobalConfig
 from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
 from network.single_conv import SingleConv
-import util
+from network.pure_upsample import PureUpsampling
 
 class PrepNetwork_Unet(nn.Module):
-    def __init__(self,input_channel, config=GlobalConfig()):
+    def __init__(self,input_channel=3, config=GlobalConfig()):
         super(PrepNetwork_Unet, self).__init__()
         self.config = config
-        # Size: 256->128
-        self.Down1_conv = DoubleConv(input_channel, 64)
-        self.Down1_pool = nn.MaxPool2d(2)
+        # input channel: 3, output channel: 96
+        # Features with Kernel Size 7
+        self.pre_7 = SingleConv(input_channel, out_channels=32, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.Down1_pool_7 = SingleConv(32, out_channels=64, kernel_size=7, stride=2, dilation=1, padding=3)
+        self.Down1_conv_7 = SingleConv(64, out_channels=64, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.Down2_pool_7 = SingleConv(64, out_channels=128, kernel_size=7, stride=2, dilation=1, padding=3)
+        self.Down2_conv_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.Down2_dilate_conv0_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=2, padding=6)
+        self.Down2_dilate_conv1_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=4, padding=12)
+        self.Down2_dilate_conv2_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=8, padding=24)
+        self.Down2_dilate_conv3_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.Down2_dilate_conv4_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.upsample2_7 = PureUpsampling(scale=2)
+        self.Up2_conv_7 = SingleConv(128, out_channels=64, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.upsample1_7 = PureUpsampling(scale=2)
+        self.Up1_conv_7 = SingleConv(64, out_channels=32, kernel_size=7, stride=1, dilation=1, padding=3)
 
-        # Size: 128->64
-        self.Down2_conv = DoubleConv(64, 128)
-        self.Down2_pool = nn.MaxPool2d(2)
-
-        # Size: 64->32
-        self.Down3_conv = DoubleConv(128, 256)
-        self.Down3_pool = nn.MaxPool2d(2)
-
-        # Size: 32->16
-        self.Down4_conv = DoubleConv(256, 512)
-        self.Down4_pool = nn.MaxPool2d(2)
-
-        # self.Conv5 = nn.Sequential(
-        #     DoubleConv(512, 1024),
-        #     DoubleConv(1024, 1024),
-        # )
-
-        self.hiding_1_1 = nn.Sequential(
-            DoubleConv(512, 512, mode=0),
-            DoubleConv(512, 512, mode=0),
-        )
-        self.hiding_1_2 = nn.Sequential(
-            DoubleConv(512, 512, mode=1),
-            DoubleConv(512, 512, mode=1),
-        )
-
-        # Size:16->32
-        self.Up4_convT = nn.ConvTranspose2d(1024, 512, 2, stride=2)
-        self.Up4_conv = DoubleConv(1024, 512)
-
-        # Size:32->64
-        self.Up3_convT = nn.ConvTranspose2d(512, 256, 2, stride=2)
-        self.Up3_conv = DoubleConv(512, 256)
-        # Size:64->128
-        self.Up2_convT = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.Up2_conv = DoubleConv(256, 128)
-        # Size:128->256
-        self.Up1_convT = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.Up1_conv = DoubleConv(128, 64)
+        # Features with Kernel Size 5
+        self.pre_5 = SingleConv(input_channel, out_channels=32, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.Down1_pool_5 = SingleConv(32, out_channels=64, kernel_size=5, stride=2, dilation=1, padding=2)
+        self.Down1_conv_5 = SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.Down2_pool_5 = SingleConv(64, out_channels=128, kernel_size=5, stride=2, dilation=1, padding=2)
+        self.Down2_conv_5 = SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.Down2_dilate_conv0_5 = SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=2, padding=4)
+        self.Down2_dilate_conv1_5 = SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=4, padding=8)
+        self.Down2_dilate_conv2_5 = SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=8, padding=16)
+        self.Down2_dilate_conv3_5 = SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.Down2_dilate_conv4_5 = SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.upsample2_5 = PureUpsampling(scale=2)
+        self.Up2_conv_5 = SingleConv(128, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.upsample1_5 = PureUpsampling(scale=2)
+        self.Up1_conv_5 = SingleConv(64, out_channels=32, kernel_size=5, stride=1, dilation=1, padding=2)
+        # Features with Kernel Size 3
+        self.pre_3 = SingleConv(input_channel, out_channels=32, kernel_size=3, stride=1, dilation=2, padding=2)
+        self.Down1_pool_3 = SingleConv(32, out_channels=64, kernel_size=3, stride=2, dilation=1, padding=1)
+        self.Down1_conv_3 = SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=2, padding=2)
+        self.Down2_pool_3 = SingleConv(64, out_channels=128, kernel_size=3, stride=2, dilation=1, padding=1)
+        self.Down2_conv_3 = SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=2, padding=2)
+        self.Down2_dilate_conv0_3 = SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=2, padding=2)
+        self.Down2_dilate_conv1_3 = SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=4, padding=4)
+        self.Down2_dilate_conv2_3 = SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=8, padding=8)
+        self.Down2_dilate_conv3_3 = SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+        self.Down2_dilate_conv4_3 = SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+        self.upsample2_3 = PureUpsampling(scale=2)
+        self.Up2_conv_3 = SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
+        self.upsample1_3 = PureUpsampling(scale=2)
+        self.Up1_conv_3 = SingleConv(64, out_channels=32, kernel_size=3, stride=1, dilation=1, padding=1)
         # Prep Network
-        self.prep1_1 = nn.Sequential(
-            DoubleConv(64, 50,mode=0),
-            DoubleConv(50, 50,mode=0))
-        self.prep1_2 = nn.Sequential(
-            DoubleConv(64, 50, mode=1),
-            DoubleConv(50, 50, mode=1))
-        self.prep1_3 = nn.Sequential(
-            DoubleConv(64, 50, mode=2),
-            DoubleConv(50, 50, mode=2))
-        self.prep2_1 = DoubleConv(150, 50, mode=0)
-        self.prep2_2 = DoubleConv(150, 50, mode=1)
-        self.prep2_3 = DoubleConv(150, 50, mode=2)
+        # self.prep1_1 = nn.Sequential(
+        #     DoubleConv(64, 50,mode=0),
+        #     DoubleConv(50, 50,mode=0))
+        # self.prep1_2 = nn.Sequential(
+        #     DoubleConv(64, 50, mode=1),
+        #     DoubleConv(50, 50, mode=1))
+        # self.prep1_3 = nn.Sequential(
+        #     DoubleConv(64, 50, mode=2),
+        #     DoubleConv(50, 50, mode=2))
+        # self.prep2_1 = DoubleConv(150, 50, mode=0)
+        # self.prep2_2 = DoubleConv(150, 50, mode=1)
+        # self.prep2_3 = DoubleConv(150, 50, mode=2)
 
 
     def forward(self, p):
-        # Size: 256->128
-        down1_c = self.Down1_conv(p)
-        down1_p = self.Down1_pool(down1_c)
+        # Features with Kernel Size 7
+        p7_0 = self.pre_7(p)
+        p7_1 = self.Down1_pool_7(p7_0)
+        p7_2 = self.Down1_conv_7(p7_1)
+        p7_3 = self.Down2_pool_7(p7_2)
+        p7_4 = self.Down2_conv_7(p7_3)
+        p7_5 = self.Down2_dilate_conv0_7(p7_4)
+        p7_6 = self.Down2_dilate_conv1_7(p7_5)
+        p7_7 = self.Down2_dilate_conv2_7(p7_6)
+        p7_8 = self.Down2_dilate_conv3_7(p7_7)
+        p7_9 = self.Down2_dilate_conv4_7(p7_8)
+        p7_10 = self.upsample2_7(p7_9)
+        p7_11 = self.Up2_conv_7(p7_10)
+        p7_12 = self.upsample1_7(p7_11)
+        p7_13 = self.Up1_conv_7(p7_12)
+        # Features with Kernel Size 5
+        p5_0 = self.pre_5(p)
+        p5_1 = self.Down1_pool_5(p5_0)
+        p5_2 = self.Down1_conv_5(p5_1)
+        p5_3 = self.Down2_pool_5(p5_2)
+        p5_4 = self.Down2_conv_5(p5_3)
+        p5_5 = self.Down2_dilate_conv0_5(p5_4)
+        p5_6 = self.Down2_dilate_conv1_5(p5_5)
+        p5_7 = self.Down2_dilate_conv2_5(p5_6)
+        p5_8 = self.Down2_dilate_conv3_5(p5_7)
+        p5_9 = self.Down2_dilate_conv4_5(p5_8)
+        p5_10 = self.upsample2_5(p5_9)
+        p5_11 = self.Up2_conv_5(p5_10)
+        p5_12 = self.upsample1_5(p5_11)
+        p5_13 = self.Up1_conv_5(p5_12)
+        # Features with Kernel Size 3
+        p3_0 = self.pre_3(p)
+        p3_1 = self.Down1_pool_3(p3_0)
+        p3_2 = self.Down1_conv_3(p3_1)
+        p3_3 = self.Down2_pool_3(p3_2)
+        p3_4 = self.Down2_conv_3(p3_3)
+        p3_5 = self.Down2_dilate_conv0_3(p3_4)
+        p3_6 = self.Down2_dilate_conv1_3(p3_5)
+        p3_7 = self.Down2_dilate_conv2_3(p3_6)
+        p3_8 = self.Down2_dilate_conv3_3(p3_7)
+        p3_9 = self.Down2_dilate_conv4_3(p3_8)
+        p3_10 = self.upsample2_3(p3_9)
+        p3_11 = self.Up2_conv_3(p3_10)
+        p3_12 = self.upsample1_3(p3_11)
+        p3_13 = self.Up1_conv_3(p3_12)
 
-        # Size: 128->64
-        down2_c = self.Down2_conv(down1_p)
-        down2_p = self.Down2_pool(down2_c)
-
-        # Size: 64->32
-        down3_c = self.Down3_conv(down2_p)
-        down3_p = self.Down3_pool(down3_c)
-
-        # Size: 32->16
-        down4_c = self.Down4_conv(down3_p)
-        down4_p = self.Down4_pool(down4_c)
-
-        hid_1 = self.hiding_1_1(down4_p)
-        hid_2 = self.hiding_1_2(down4_p)
-        mid = torch.cat([hid_1, hid_2], dim=1)
-
-        up4_convT = self.Up4_convT(mid)
-        merge4 = torch.cat([up4_convT, down4_c], dim=1)
-        up4_conv = self.Up4_conv(merge4)
-        # Size: 32->64
-        up3_convT = self.Up3_convT(up4_conv)
-        merge3 = torch.cat([up3_convT, down3_c], dim=1)
-        up3_conv = self.Up3_conv(merge3)
-        # Size: 64->128
-        up2_convT = self.Up2_convT(up3_conv)
-        merge2 = torch.cat([up2_convT, down2_c], dim=1)
-        up2_conv = self.Up2_conv(merge2)
-        # Size: 128->256
-        up1_convT = self.Up1_convT(up2_conv)
-        merge1 = torch.cat([up1_convT, down1_c], dim=1)
-        up1_conv = self.Up1_conv(merge1)
-        # Prepare
-        p1 = self.prep1_1(up1_conv)
-        p2 = self.prep1_2(up1_conv)
-        p3 = self.prep1_3(up1_conv)
-        mid = torch.cat((p1, p2, p3), 1)
-        p4 = self.prep2_1(mid)
-        p5 = self.prep2_2(mid)
-        p6 = self.prep2_3(mid)
-        out = torch.cat((p4, p5, p6), 1)
+        out = torch.cat((p7_13, p5_13, p3_13), 1)
         return out
