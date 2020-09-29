@@ -1,15 +1,15 @@
-import torch
-import torch.nn as nn
-
 from config import GlobalConfig
 from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
+import util
+import torch
+import torch.nn as nn
 from network.single_conv import SingleConv
 from network.pure_upsample import PureUpsampling
 
-class PrepNetwork_Unet(nn.Module):
+class RevertNew(nn.Module):
     def __init__(self,input_channel=3, config=GlobalConfig()):
-        super(PrepNetwork_Unet, self).__init__()
+        super(RevertNew, self).__init__()
         self.config = config
         # input channel: 3, output channel: 96
         # Features with Kernel Size 7---->channel:100

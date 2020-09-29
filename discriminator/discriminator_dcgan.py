@@ -15,12 +15,14 @@ class Discriminator_dcgan(nn.Module):
 
             # State (256x16x16)
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(512),
+            # nn.BatchNorm2d(512),
+            nn.InstanceNorm2d(512),
             nn.LeakyReLU(0.2, inplace=True),
 
             # State (512x8x8)
             nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(1024),
+            # nn.BatchNorm2d(1024),
+            nn.InstanceNorm2d(1024),
             nn.LeakyReLU(0.2, inplace=True))
             # outptut of main module --> State (1024x4x4)
 

@@ -9,6 +9,7 @@ from torchvision import datasets
 # from network.localize_net import Localize_hanson
 import util
 from config import GlobalConfig
+from network.reversible_image_net_test import RNet_test
 from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
 from ImageLoader_specific import ImageLoader
 
@@ -268,7 +269,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        # net.load_model(MODELS_PATH + 'Epoch N27')
+        # net.load_model(MODELS_PATH + 'Epoch N10')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N4')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
