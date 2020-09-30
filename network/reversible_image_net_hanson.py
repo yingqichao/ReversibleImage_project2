@@ -15,6 +15,7 @@ from noise_layers.dropout import Dropout
 from noise_layers.jpeg_compression import JpegCompression
 from decoder.revert_sameAsPrep import RevertNew
 from discriminator.discriminator import Discriminator
+from network.pure_upsample import PureUpsampling
 
 
 class ReversibleImageNetwork_hanson:
@@ -30,7 +31,8 @@ class ReversibleImageNetwork_hanson:
         # self.hiding_network = HidingNetwork().to(self.device)
         # self.reveal_network = RevealNetwork().to(self.device)
         """ Recovery Network """
-        self.revert_network = RevertNew(input_channel=3, config=config).to(self.device)
+        # self.revert_network = RevertNew(input_channel=3, config=config).to(self.device)
+        self.revert_network = Revert(config=config).to(self.device)
         """Localize Network"""
         # if self.username=="qichao":
         #     self.localizer = LocalizeNetwork(config).to(self.device)
@@ -62,6 +64,8 @@ class ReversibleImageNetwork_hanson:
         # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
         # self.gaussian = Gaussian(config).to(self.device)
         self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
+        """DownSampler"""
+        self.downsample512_32 = PureUpsampling(scale=32 / 512).to(self.device)
 
     def train_on_batch(self, Cover):
         """
@@ -85,11 +89,12 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_revert_network.zero_grad()
             self.optimizer_discrim.zero_grad()
             Marked = self.preprocessing_network(Cover)
+            Cover_32 = self.downsample512_32(Cover).detach()
 
             Attacked = self.jpeg_layer(Marked)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
             # Extracted = self.reveal_network(Cropped_out)
-            Recovered = self.revert_network(Cropped_out)
+            Recovered = self.revert_network(Cropped_out,stage=32)
             """ Discriminate """
             # d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
             # d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
@@ -109,8 +114,8 @@ class ReversibleImageNetwork_hanson:
             # loss_localization_again = self.bce_with_logits_loss(pred_again_label, cropout_label)
             if self.config.useVgg == False:
                 loss_cover = self.mse_loss(Marked, Cover)
-                loss_recover = self.mse_loss(Recovered, Cover)
-                loss_mask = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)
+                loss_recover = self.mse_loss(Recovered, Cover_32)
+                # loss_mask = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)
             else:
                 vgg_on_cov = self.vgg_loss(Cover)
                 vgg_on_enc = self.vgg_loss(Marked)
@@ -122,7 +127,7 @@ class ReversibleImageNetwork_hanson:
             # d_on_encoded_for_recovery = self.discriminator(Recovered)
             # g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
             """ Total loss for EncoderDecoder """
-            loss_enc_dec = self.config.hyper_recovery * loss_recover + loss_cover * self.config.hyper_cover + loss_mask * self.config.hyper_mask
+            loss_enc_dec = self.config.hyper_recovery * loss_recover + loss_cover * self.config.hyper_cover# + loss_mask * self.config.hyper_mask
                            # + loss_localization_again * self.config.hyper_localizer\
                             # + g_loss_adv_enc * self.config.hyper_discriminator \
             loss_enc_dec.backward()
@@ -138,7 +143,7 @@ class ReversibleImageNetwork_hanson:
             'loss_discriminator_recovery': 0 # g_loss_adv_recovery.item()
         }
         # Test
-        print("Loss Mask: "+str(loss_mask.item() * self.config.hyper_mask))
+        # print("Loss Mask: "+str(loss_mask.item() * self.config.hyper_mask))
         return losses, (Marked, Recovered, Cropped_out)
 
         # """ Localizer (deleted) """

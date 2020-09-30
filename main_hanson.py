@@ -9,7 +9,7 @@ from torchvision import datasets
 # from network.localize_net import Localize_hanson
 import util
 from config import GlobalConfig
-from network.reversible_image_net_test import RNet_test
+from network.reversible_image_net_hide import RNet_test
 from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
 from ImageLoader_specific import ImageLoader
 

@@ -9,7 +9,7 @@ from network.single_conv import SingleConv
 from network.pure_upsample import PureUpsampling
 
 class Revert(nn.Module):
-    def __init__(self,input_channel=96, config=GlobalConfig()):
+    def __init__(self,config=GlobalConfig()):
         super(Revert, self).__init__()
         self.config = config
         self.prep = DoubleConv(3, 16)
