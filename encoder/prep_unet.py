@@ -27,7 +27,7 @@ class PrepNetwork_Unet(nn.Module):
         self.Down2_dilate_conv3_7 = SingleConv(256, out_channels=256, kernel_size=7, stride=1, dilation=1, padding=3)
         self.Down2_dilate_conv4_7 = SingleConv(256, out_channels=256, kernel_size=7, stride=1, dilation=1, padding=3)
         self.upsample2_7 = PureUpsampling(scale=8)
-        self.Up2_conv_7 = SingleConv(288, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
+        self.Up2_conv_7 = SingleConv(256, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
         """Features with Kernel Size 5---->channel:75 """
         self.pre_5 = SingleConv(input_channel, out_channels=32, kernel_size=5, stride=1, dilation=1, padding=2)
         self.Down1_pool_5 = SingleConv(32, out_channels=64, kernel_size=5, stride=2, dilation=1, padding=2)
@@ -42,9 +42,9 @@ class PrepNetwork_Unet(nn.Module):
         self.Down2_dilate_conv3_5 = SingleConv(256, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
         self.Down2_dilate_conv4_5 = SingleConv(256, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
         self.upsample2_5 = PureUpsampling(scale=4)
-        self.Up2_conv_5 = SingleConv(320, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.Up2_conv_5 = SingleConv(256, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
         self.upsample1_5 = PureUpsampling(scale=2)
-        self.Up1_conv_5 = SingleConv(160, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.Up1_conv_5 = SingleConv(128, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         """Features with Kernel Size 3---->channel:64 """
         self.pre_3 = SingleConv(input_channel, out_channels=32, kernel_size=3, stride=1, dilation=2, padding=2)
         self.Down1_pool_3 = SingleConv(32, out_channels=64, kernel_size=3, stride=2, dilation=1, padding=1)
