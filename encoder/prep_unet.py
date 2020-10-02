@@ -90,8 +90,8 @@ class PrepNetwork_Unet(nn.Module):
         p7_10 = self.Down2_dilate_conv3_7(p7_9)
         p7_11 = self.Down2_dilate_conv4_7(p7_10)
         p7_12 = self.upsample2_7(p7_11)
-        p7_12_cat = torch.cat((p7_12, p7_0), 1)
-        p7_13 = self.Up2_conv_7(p7_12_cat)
+        # p7_12_cat = torch.cat((p7_12, p7_0), 1)
+        # p7_13 = self.Up2_conv_7(p7_12_cat)
 
 
         # Features with Kernel Size 5
@@ -108,11 +108,11 @@ class PrepNetwork_Unet(nn.Module):
         p5_10 = self.Down2_dilate_conv3_5(p5_9)
         p5_11 = self.Down2_dilate_conv4_5(p5_10)
         p5_12 = self.upsample2_5(p5_11)
-        p5_12_cat = torch.cat((p5_12, p5_2), 1)
-        p5_13 = self.Up2_conv_5(p5_12_cat)
+        # p5_12_cat = torch.cat((p5_12, p5_2), 1)
+        p5_13 = self.Up2_conv_5(p5_12)
         p5_14 = self.upsample1_5(p5_13)
-        p5_14_cat = torch.cat((p5_14, p5_0), 1)
-        p5_15 = self.Up1_conv_5(p5_14_cat)
+        # p5_14_cat = torch.cat((p5_14, p5_0), 1)
+        # p5_15 = self.Up1_conv_5(p5_14_cat)
         # Features with Kernel Size 3
         p3_0 = self.pre_3(p)
         p3_1 = self.Down1_pool_3(p3_0)
@@ -135,7 +135,7 @@ class PrepNetwork_Unet(nn.Module):
         p3_32 = self.upsample0_3(p3_15)
         p3_32_cat = torch.cat((p3_32, p3_0), 1)
         p3_17 = self.Up0_conv_3(p3_32_cat)
-        concat = torch.cat((p7_13, p5_15, p3_17), 1)
+        concat = torch.cat((p7_12, p5_14, p3_17), 1)
         r1 = self.retrieve1(concat)
         r2 = self.retrieve2(r1)
         r3 = self.retrieve3(r2)
