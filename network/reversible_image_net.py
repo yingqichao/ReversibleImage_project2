@@ -7,20 +7,24 @@ from DeepSteg import HidingNetwork
 from config import GlobalConfig
 from decoder.revert_unet import Revert_Unet
 from decoder.revert import Revert
+from decoder.revert_P3 import RevertNew_P3
+from decoder.revert_P5 import RevertNew_P5
 from encoder.prep_unet import PrepNetwork_Unet
 from loss.vgg_loss import VGGLoss
 from network.reveal import RevealNetwork
 from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.jpeg_compression import JpegCompression
-from decoder.revert_sameAsPrep import RevertNew
+from decoder.revert_sameAsPrep import RevertNew_P7
 from discriminator.discriminator import Discriminator
 from network.pure_upsample import PureUpsampling
-
+from decoder.revert_ying import Revert_ying
 
 class ReversibleImageNetwork_ying:
     def __init__(self, username, config=GlobalConfig()):
         super(ReversibleImageNetwork_ying, self).__init__()
+        """ Settings """
+        self.alpha = 1.0
         self.config = config
         self.device = self.config.device
         self.username = username
@@ -31,17 +35,19 @@ class ReversibleImageNetwork_ying:
         # self.hiding_network = HidingNetwork().to(self.device)
         # self.reveal_network = RevealNetwork().to(self.device)
         """ Recovery Network """
-        # self.revert_network = RevertNew(input_channel=3, config=config).to(self.device)
-        self.revert_network = Revert(config=config).to(self.device)
+        self.revert_network_P7 = RevertNew_P7(input_channel=3, config=config).to(self.device)
+        self.revert_network_P5 = RevertNew_P5(input_channel=3, config=config).to(self.device)
+        self.revert_network_P3 = RevertNew_P3(input_channel=3, config=config).to(self.device)
+        # self.revert_network = Revert(config=config).to(self.device)
         """Localize Network"""
         # if self.username=="qichao":
         #     self.localizer = LocalizeNetwork(config).to(self.device)
         # else:
         #     self.localizer = LocalizeNetwork_noPool(config).to(self.device)
         """Discriminator"""
-        self.discriminator = Discriminator(config).to(self.device)
-        self.cover_label = 1
-        self.encoded_label = 0
+        # self.discriminator = Discriminator(config).to(self.device)
+        # self.cover_label = 1
+        # self.encoded_label = 0
         """Vgg"""
 
         self.vgg_loss = VGGLoss(3, 1, False)
@@ -54,18 +60,18 @@ class ReversibleImageNetwork_ying:
         """Optimizer"""
         # self.optimizer_hiding_network = torch.optim.Adam(self.hiding_network.parameters())
         self.optimizer_preprocessing_network = torch.optim.Adam(self.preprocessing_network.parameters())
-        self.optimizer_revert_network = torch.optim.Adam(self.revert_network.parameters())
+        self.optimizer_revert_P7_network = torch.optim.Adam(self.revert_network_P7.parameters())
+        self.optimizer_revert_P5_network = torch.optim.Adam(self.revert_network_P5.parameters())
+        self.optimizer_revert_P3_network = torch.optim.Adam(self.revert_network_P3.parameters())
         # self.optimizer_reveal_network = torch.optim.Adam(self.reveal_network.parameters())
-        self.optimizer_discrim = torch.optim.Adam(self.discriminator.parameters())
+        # self.optimizer_discrim = torch.optim.Adam(self.discriminator.parameters())
 
         """Attack Layers"""
         self.cropout_layer = Cropout(config).to(self.device)
         self.jpeg_layer = JpegCompression(self.device).to(self.device)
         # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
         # self.gaussian = Gaussian(config).to(self.device)
-        self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
-        """DownSampler"""
-        self.downsample512_32 = PureUpsampling(scale=32 / 512).to(self.device)
+        # self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
 
     def train_on_batch(self, Cover):
         """
@@ -76,25 +82,52 @@ class ReversibleImageNetwork_ying:
         """
         batch_size = Cover.shape[0]
         self.preprocessing_network.train()
-        # self.hiding_network.train()
-        # self.reveal_network.train()
-        self.revert_network.train()
-        self.discriminator.train()
+        self.revert_network_P7.train()
+        self.revert_network_P5.train()
+        self.revert_network_P3.train()
+        # self.discriminator.train()
+        self.alpha -= 1 / 20480
+        if self.alpha < 0.0:
+            self.alpha = 0.0
 
         with torch.enable_grad():
             """ Run, Train the discriminator"""
             self.optimizer_preprocessing_network.zero_grad()
             # self.optimizer_hiding_network.zero_grad()
             # self.optimizer_reveal_network.zero_grad()
-            self.optimizer_revert_network.zero_grad()
-            self.optimizer_discrim.zero_grad()
+            self.optimizer_revert_P7_network.zero_grad()
+            self.optimizer_revert_P5_network.zero_grad()
+            self.optimizer_revert_P3_network.zero_grad()
+            # self.optimizer_discrim.zero_grad()
             Marked = self.preprocessing_network(Cover)
-            Cover_32 = self.downsample512_32.detach()
-
             Attacked = self.jpeg_layer(Marked)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
             # Extracted = self.reveal_network(Cropped_out)
-            Recovered = self.revert_network(Cropped_out)
+
+            p7_final = self.revert_network_P7(Cropped_out)
+            p5_final = self.revert_network_P5(Cropped_out.detach(), p7_final.detach())
+            # p3_final = self.revert_network_P3(p5_final)
+            """ First Train P5 fully, then train alpha*P7+(1-alpha)*P5"""
+            loss_fromP7_global = self.mse_loss(p7_final, Marked.detach())
+            loss_fromP7_local = self.mse_loss(p7_final * cropout_mask, Marked.detach() * cropout_mask) * 5
+            loss_fromP7 = loss_fromP7_local + loss_fromP7_global
+            loss_fromP5_global = self.mse_loss(p5_final, Marked.detach())
+            loss_fromP5_local = self.mse_loss(p5_final * cropout_mask, Marked.detach() * cropout_mask) * 5
+            loss_fromP5 = loss_fromP5_local + loss_fromP5_global
+            loss_fromP5.backward()
+            self.optimizer_revert_P5_network.step()
+            p5_final_again = self.revert_network_P5(Cropped_out, p7_final)
+            Recovered = p7_final*self.alpha + p5_final_again*(1-self.alpha)
+            loss_cover = self.mse_loss(Marked, Cover)
+            loss_recover_global = self.mse_loss(Recovered, Marked.detach())
+            loss_recover_local = self.mse_loss(Recovered * cropout_mask, Marked.detach() * cropout_mask) * 5
+            loss_recover = loss_recover_local + loss_recover_global
+            loss_enc_dec = self.config.hyper_recovery * loss_recover + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
+            loss_enc_dec.backward()
+            self.optimizer_preprocessing_network.step()
+            self.optimizer_revert_P7_network.step()
+            print("Curr alpha: {0:.6f}, (Total) Overall Loss: {1:.6f}, local: {2:.6f},  (P7) Overall Loss: {3:.6f}, local: {4:.6f}, (P5) Overall Loss: {5:.6f}, local : {6:.6f}"
+                  .format(self.alpha, loss_recover, loss_recover_local, loss_fromP7, loss_fromP7_local, loss_fromP5, loss_fromP5_local))
             """ Discriminate """
             # d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
             # d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
@@ -112,27 +145,28 @@ class ReversibleImageNetwork_ying:
             """ Train PrepNetwork and RevertNetwork """
             # pred_again_label = self.localizer(x_1_attack)
             # loss_localization_again = self.bce_with_logits_loss(pred_again_label, cropout_label)
-            if self.config.useVgg == False:
-                loss_cover = self.mse_loss(Marked, Cover)
-                loss_recover = self.mse_loss(Recovered, Cover_32)
-                # loss_mask = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)
-            else:
-                vgg_on_cov = self.vgg_loss(Cover)
-                vgg_on_enc = self.vgg_loss(Marked)
-                loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
-                vgg_on_recovery = self.vgg_loss(Recovered)
-                loss_recover = self.mse_loss(vgg_on_cov, vgg_on_recovery)
-            # d_on_encoded_for_enc = self.discriminator(Marked)
-            # g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
-            # d_on_encoded_for_recovery = self.discriminator(Recovered)
-            # g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
-            """ Total loss for EncoderDecoder """
-            loss_enc_dec = self.config.hyper_recovery * loss_recover + loss_cover * self.config.hyper_cover# + loss_mask * self.config.hyper_mask
-                           # + loss_localization_again * self.config.hyper_localizer\
-                            # + g_loss_adv_enc * self.config.hyper_discriminator \
-            loss_enc_dec.backward()
-            self.optimizer_preprocessing_network.step()
-            self.optimizer_revert_network.step()
+            # if self.config.useVgg == False:
+            #     loss_cover = self.mse_loss(Marked, Cover)
+            #     loss_recover = self.mse_loss(Recovered, Marked.detach())*5
+            #     # loss_recover = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)*5
+            # else:
+            #     vgg_on_cov = self.vgg_loss(Cover)
+            #     vgg_on_enc = self.vgg_loss(Marked)
+            #     loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
+            #     vgg_on_recovery = self.vgg_loss(Recovered)
+            #     loss_recover = self.mse_loss(vgg_on_cov, vgg_on_recovery)
+            # # d_on_encoded_for_enc = self.discriminator(Marked)
+            # # g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
+            # # d_on_encoded_for_recovery = self.discriminator(Recovered)
+            # # g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
+            # """ Total loss for EncoderDecoder """
+            # loss_enc_dec = self.config.hyper_recovery * loss_recover + loss_cover * self.config.hyper_cover# + loss_mask * self.config.hyper_mask
+            #                # + loss_localization_again * self.config.hyper_localizer\
+            #                 # + g_loss_adv_enc * self.config.hyper_discriminator \
+            # loss_enc_dec.backward()
+            # self.optimizer_preprocessing_network.step()
+            # self.optimizer_revert_P7_network.step()
+            # self.optimizer_revert_P3_network.step()
 
         losses = {
             'loss_sum': loss_enc_dec.item(),
@@ -144,7 +178,7 @@ class ReversibleImageNetwork_ying:
         }
         # Test
         # print("Loss Mask: "+str(loss_mask.item() * self.config.hyper_mask))
-        return losses, (Marked, Recovered, Cropped_out)
+        return losses, (Marked, Recovered, Cropped_out, p7_final, p5_final) # Recovered*cropout_mask
 
         # """ Localizer (deleted) """
         # x_1_crop, cropout_label, _ = self.cropout_layer(x_hidden, Cover)
@@ -184,8 +218,10 @@ class ReversibleImageNetwork_ying:
         # return losses, (x_hidden, x_recover.mul(mask) + Cover.mul(1 - mask), pred_label, cropout_label)
 
     def save_state_dict_all(self, path):
-        torch.save(self.revert_network.state_dict(), path + '_revert_network.pkl')
-        print("Successfully Saved: " + path + '_revert_network.pkl')
+        torch.save(self.revert_network_P7.state_dict(), path + '_revert_network_P7.pkl')
+        print("Successfully Saved: " + path + '_revert_network_P7.pkl')
+        torch.save(self.revert_network_P5.state_dict(), path + '_revert_network_P5.pkl')
+        print("Successfully Saved: " + path + '_revert_network_P5.pkl')
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
         # torch.save(self.hiding_network.state_dict(), path + '_hiding_network.pkl')
@@ -196,8 +232,10 @@ class ReversibleImageNetwork_ying:
         # print("Successfully Saved: " + path + '_discriminator_network.pkl')
 
     def save_model(self,path):
-        torch.save(self.revert_network, path + '_revert_network.pth')
-        print("Successfully Saved: " + path + '_revert_network.pth')
+        torch.save(self.revert_network_P7, path + '_revert_network_P7.pth')
+        print("Successfully Saved: " + path + '_revert_network_P7.pth')
+        torch.save(self.revert_network_P5, path + '_revert_network_P5.pth')
+        print("Successfully Saved: " + path + '_revert_network_P5.pth')
         torch.save(self.preprocessing_network, path + '_prep_network.pth')
         print("Successfully Saved: " + path + '_prep_network.pth')
         # torch.save(self.hiding_network, path + '_hiding_network.pth')
@@ -212,8 +250,10 @@ class ReversibleImageNetwork_ying:
         # print("Successfully Loaded: " + path + '_discriminator_network.pkl')
         self.preprocessing_network.load_state_dict(torch.load(path + '_prep_network.pkl'))
         print("Successfully Loaded: " + path + '_prep_network.pkl')
-        self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'))
-        print("Successfully Loaded: " + path + '_revert_network.pkl')
+        self.revert_network_P7.load_state_dict(torch.load(path + '_revert_network_P7.pkl'))
+        print("Successfully Loaded: " + path + '_revert_network_P7.pkl')
+        self.revert_network_P5.load_state_dict(torch.load(path + '_revert_network_P5.pkl'))
+        print("Successfully Loaded: " + path + '_revert_network_P5.pkl')
         # self.hiding_network.load_state_dict(torch.load(path + '_hiding_network.pkl'))
         # print("Successfully Loaded: " + path + '_hiding_network.pkl')
         # self.reveal_network.load_state_dict(torch.load(path + '_reveal_network.pkl'))
@@ -224,8 +264,10 @@ class ReversibleImageNetwork_ying:
         # print("Successfully Loaded: " + path + '_discriminator_network.pth')
         self.preprocessing_network = torch.load(path + '_prep_network.pth')
         print("Successfully Loaded: " + path + '_prep_network.pth')
-        self.revert_network = torch.load(path + '_revert_network.pth')
-        print("Successfully Loaded: " + path + '_revert_network.pth')
+        self.revert_network_P7 = torch.load(path + '_revert_network_P7.pth')
+        print("Successfully Loaded: " + path + '_revert_network_P7.pth')
+        self.revert_network_P5 = torch.load(path + '_revert_network_P5.pth')
+        print("Successfully Loaded: " + path + '_revert_network_P5.pth')
         # self.hiding_network = torch.load(path + '_hiding_network.pth')
         # print("Successfully Loaded: " + path + '_hiding_network.pth')
         # self.reveal_network = torch.load(path + '_reveal_network.pth')

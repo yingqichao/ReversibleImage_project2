@@ -5,11 +5,11 @@ class GlobalConfig():
     def __init__(self):
 
         self.num_epochs = 50
-        self.train_batch_size = 2
+        self.train_batch_size = 4
         self.test_batch_size = 1
 
-        self.Height = 512
-        self.Width = 512
+        self.Height = 256
+        self.Width = 256
         self.block_size = 16
         self.decoder_channels = 128
         self.min_required_block = 64
@@ -30,10 +30,10 @@ class GlobalConfig():
         self.hyper_localizer = 0.1
         self.useVgg = False
         if self.useVgg:
-            self.hyper_cover = 1
+            self.hyper_cover = 2
             self.hyper_recovery = 1
         else:
-            self.hyper_cover = 1
+            self.hyper_cover = 2
             self.hyper_recovery = 1
         self.hyper_discriminator = 0.001
         self.hyper_intermediate = 1

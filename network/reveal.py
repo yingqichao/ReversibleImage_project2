@@ -9,20 +9,20 @@ class RevealNetwork(nn.Module):
         super(RevealNetwork, self).__init__()
         # input channel: 3, output channel: 96
         self.initialR3 = nn.Sequential(
-            DoubleConv(3, 64, mode=0),
-            DoubleConv(64, 64, mode=0))
+            DoubleConv(3, 50, mode=0),
+            DoubleConv(50, 50, mode=0))
         self.initialR4 = nn.Sequential(
-            DoubleConv(3, 64, mode=1),
-            DoubleConv(64, 64, mode=1))
+            DoubleConv(3, 50, mode=1),
+            DoubleConv(50, 50, mode=1))
         self.initialR5 = nn.Sequential(
-            DoubleConv(3, 64, mode=2),
-            DoubleConv(64, 64, mode=2))
-        self.finalR3 = DoubleConv(192, 64, mode=0)
-        self.finalR4 = DoubleConv(192, 64, mode=1)
-        self.finalR5 = DoubleConv(192, 64, mode=2)
+            DoubleConv(3, 50, mode=2),
+            DoubleConv(50, 50, mode=2))
+        self.finalR3 = DoubleConv(150, 50, mode=0)
+        self.finalR4 = DoubleConv(150, 50, mode=1)
+        self.finalR5 = DoubleConv(150, 50, mode=2)
 
         self.finalR = nn.Sequential(
-            nn.Conv2d(192, 96, kernel_size=1, padding=0))
+            nn.Conv2d(150, 50, kernel_size=1, padding=0))
 
     def forward(self, r):
         r1 = self.initialR3(r)

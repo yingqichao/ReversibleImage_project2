@@ -8,16 +8,19 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
         self.left = nn.Sequential(
             nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=stride, padding=1, bias=False),
-            nn.BatchNorm2d(outchannel),
+            # nn.BatchNorm2d(outchannel),
+            nn.InstanceNorm2d(outchannel),
             nn.ReLU(inplace=True),
             nn.Conv2d(outchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(outchannel)
+            # nn.BatchNorm2d(outchannel)
+            nn.InstanceNorm2d(outchannel)
         )
         self.shortcut = nn.Sequential()
         if stride != 1 or inchannel != outchannel:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                # nn.BatchNorm2d(outchannel)
+                nn.InstanceNorm2d(outchannel)
             )
 
     def forward(self, x):
@@ -32,7 +35,8 @@ class ResNet(nn.Module):
         self.inchannel = 64
         self.conv1 = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(64),
+            # nn.BatchNorm2d(64),
+            nn.InstanceNorm2d(64),
             nn.ReLU(),
         )
         self.layer1 = self.make_layer(ResidualBlock, 64,  2, stride=1)

@@ -22,7 +22,7 @@ class Cropout(nn.Module):
             cover_image = torch.zeros_like(embedded_image)
         assert embedded_image.shape == cover_image.shape
         sum_attacked = 0
-        cropout_mask = torch.zeros_like(embedded_image)
+        cropout_mask = torch.zeros_like(embedded_image, requires_grad=False)
         block_height, block_width = int(embedded_image.shape[2] / 16), int(embedded_image.shape[3] / 16)
         # if self.config.num_classes==2:
         #     cropout_label = torch.zeros((embedded_image.shape[0], 2, block_height, block_width), requires_grad=False)

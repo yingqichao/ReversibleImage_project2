@@ -98,27 +98,27 @@ class Revert(nn.Module):
             in_64 = torch.cat((res_64,up_64), 1)
             out_64 = self.final64(in_64)
             if stage==64:
-                return out_64
+                return out_32, out_64
         if stage >= 128:
             res_128 = self.Conv64_128(res_64)
             up_128 = self.upsample2(out_64)
             in_128 = torch.cat((res_128, up_128), 1)
             out_128 = self.final64(in_128)
             if stage == 128:
-                return out_128
+                return out_64, out_128
         if stage >= 256:
             res_256 = self.Conv128_256(res_128)
             up_256 = self.upsample2(out_128)
             in_256 = torch.cat((res_256, up_256), 1)
             out_256 = self.final64(in_256)
             if stage == 256:
-                return out_256
+                return out_128, out_256
         if stage >= 512:
             res_512 = self.Conv64_128(res_256)
             up_512 = self.upsample2(out_256)
             in_512 = torch.cat((res_512, up_512), 1)
             out_512 = self.final64(in_512)
             if stage == 512:
-                return out_512
+                return out_256, out_512
         # Won't reach
         return None
