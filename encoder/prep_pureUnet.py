@@ -81,7 +81,7 @@ class Prep_pureUnet(nn.Module):
         )
 
         self.finalH = nn.Sequential(
-            nn.Conv2d(64, 3, kernel_size=1, padding=0),
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
 
@@ -111,6 +111,7 @@ class Prep_pureUnet(nn.Module):
         up2 = self.upsample2_3(up3_cat)
         up2_cat = torch.cat((down7, up2), 1)
         up1 = self.upsample1_3(up2_cat)
-        out = self.finalH(up1)
+        up1_cat = torch.cat((down8, up1), 1)
+        out = self.finalH(up1_cat)
 
         return out

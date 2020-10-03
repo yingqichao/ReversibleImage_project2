@@ -162,7 +162,7 @@ if __name__ =='__main__':
                 data, _ = train_batch
                 train_covers = data.to(device)
                 losses, output = net.train_on_batch(train_covers)
-                x_hidden, x_recover, x_attacked, p7_final, p5_final = output
+                x_hidden, x_recover, x_attacked = output
                 # losses
                 train_loss_discriminator_enc.append(losses['loss_discriminator_enc'])
                 train_loss_discriminator_recovery.append(losses['loss_discriminator_recovery'])
@@ -281,7 +281,6 @@ if __name__ =='__main__':
 
     if not config.skipMainTraining:
         # net.load_model(MODELS_PATH + 'Epoch N12')
-        net.load_model(MODELS_PATH + 'Epoch N4')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
         # Plot loss through epochs

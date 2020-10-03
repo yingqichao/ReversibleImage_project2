@@ -12,113 +12,142 @@ class Revert(nn.Module):
     def __init__(self,config=GlobalConfig()):
         super(Revert, self).__init__()
         self.config = config
-        self.prep = DoubleConv(3, 16)
-        self.upsample2 = PureUpsampling(scale=2)
-        # 512-> 256
-        self.Conv512_256 = nn.Sequential(
-            DoubleConv(16, 32),
-            DoubleConv(32, 32),
-            PureUpsampling(scale=0.5),
+        self.downsample_8 = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, dilation=1, padding=1),
+            nn.ELU(inplace=True)
         )
-        # 256 -> 128
-        self.Conv256_128 = nn.Sequential(
-            DoubleConv(32, 64),
-            DoubleConv(64, 64),
-            PureUpsampling(scale=0.5),
+        # 128
+        self.downsample_7 = SingleConv(64, out_channels=128, kernel_size=5, stride=2, dilation=1, padding=2)
+        # self.Down1_conv_7 = SingleConv(64, out_channels=64, kernel_size=7, stride=1, dilation=1, padding=3)
+        # 64
+        self.downsample_6 = SingleConv(128, out_channels=256, kernel_size=5, stride=2, dilation=1, padding=2)
+        # self.Down2_conv_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
+        # 32
+        self.downsample_5 = SingleConv(256, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
+        # 16
+        self.downsample_4 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
+        # 8
+        self.downsample_3 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
+        # 4
+        self.downsample_2 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
+        # 2
+        self.downsample_1 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
+        # 1
+        self.downsample_0 = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=5, stride=2, dilation=1, padding=2),
+            nn.ELU(inplace=True)
         )
-        # 128 -> 64
-        self.Conv128_64 = nn.Sequential(
-            DoubleConv(64, 128),
-            DoubleConv(128, 128),
-            PureUpsampling(scale=0.5),
-        )
-        # 64-> 32
-        self.Conv64_32 = nn.Sequential(
-            DoubleConv(128, 256),
-            DoubleConv(256, 256),
-            PureUpsampling(scale=0.5),
-        )
-        # mid
-        self.mid = nn.Sequential(
-            DoubleConv(256, 256),
-            DoubleConv(256, 256),
-        )
-        # 32->64
-        self.Conv32_64 = nn.Sequential(
+        # 2
+        self.upsample8_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            DoubleConv(256, 128),
-            DoubleConv(128, 128),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
         )
-        # 64->128
-        self.Conv64_128 = nn.Sequential(
+        # 4
+        self.upsample7_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            DoubleConv(128, 64),
-            DoubleConv(64, 64),
+            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
         )
-        # 128->256
-        self.Conv128_256 = nn.Sequential(
+        # 8
+        self.upsample6_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            DoubleConv(64, 32),
-            DoubleConv(32, 32),
+            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
         )
-        # 256->512
-        self.Conv256_512 = nn.Sequential(
+        # 16
+        self.upsample5_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            DoubleConv(32, 16),
-            DoubleConv(16, 16),
+            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 32
+        self.upsample4_3 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 64
+        self.upsample3_3 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(1024, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 128
+        self.upsample2_3 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 256
+        self.upsample1_3 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(256, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+
+        self.finalH = nn.Sequential(
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            nn.Tanh()
         )
 
         self.final32 = nn.Sequential(
-            nn.Conv2d(256, 3, kernel_size=1, padding=0))
+            nn.Conv2d(512, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
         self.final64 = nn.Sequential(
-            nn.Conv2d(128, 3, kernel_size=1, padding=0))
+            nn.Conv2d(256, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
         self.final128 = nn.Sequential(
-            nn.Conv2d(64, 3, kernel_size=1, padding=0))
-        self.final256 = nn.Sequential(
-            nn.Conv2d(32, 3, kernel_size=1, padding=0))
-        self.final512 = nn.Sequential(
-            nn.Conv2d(16, 3, kernel_size=1, padding=0))
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
+        # self.final256 = nn.Sequential(
+        #     nn.Conv2d(64, 3, kernel_size=1, padding=0),
+        #     nn.Tanh()
+        # )
 
 
     def forward(self, ori_image, stage):
         # 阶梯训练，仿照ProgressiveGAN
-        p = self.prep(ori_image)
-        p_256 = self.Conv512_256(p)
-        p_128 = self.Conv256_128(p_256)
-        p_64 = self.Conv128_64(p_128)
-        p_32 = self.Conv64_32(p_64)
+        down8 = self.downsample_8(ori_image)
+        down7 = self.downsample_7(down8)
+        down6 = self.downsample_6(down7)
+        down5 = self.downsample_5(down6)
+        down4 = self.downsample_4(down5)
+        down3 = self.downsample_3(down4)
+        down2 = self.downsample_2(down3)
+        down1 = self.downsample_1(down2)
+        down0 = self.downsample_0(down1)
+        up8 = self.upsample8_3(down0)
+        up8_cat = torch.cat((down1, up8), 1)
+        up7 = self.upsample7_3(up8_cat)
+        up7_cat = torch.cat((down2, up7), 1)
+        up6 = self.upsample6_3(up7_cat)
+        up6_cat = torch.cat((down3, up6), 1)
+        up5 = self.upsample5_3(up6_cat)
+        up5_cat = torch.cat((down4, up5), 1)
+
         if stage >= 32:
-            res_32 = self.mid(p_32)
-            out_32 = self.final32(res_32)
+            up4 = self.upsample4_3(up5_cat)
+            out_32 = self.final32(up4)
             if stage==32:
                 return out_32
-        if stage>=64:
-            res_64 = self.Conv32_64(res_32)
+        if stage >= 64:
             up_64 = self.upsample2(out_32)
-            in_64 = torch.cat((res_64,up_64), 1)
-            out_64 = self.final64(in_64)
+            up4_cat = torch.cat((down5, up4), 1)
+            up3 = self.upsample3_3(up4_cat)
+            out_64 = self.final64(up3)
             if stage==64:
-                return out_32, out_64
+                return up_64, out_64
         if stage >= 128:
-            res_128 = self.Conv64_128(res_64)
             up_128 = self.upsample2(out_64)
-            in_128 = torch.cat((res_128, up_128), 1)
-            out_128 = self.final64(in_128)
+            up3_cat = torch.cat((down6, up3), 1)
+            up2 = self.upsample2_3(up3_cat)
+            out_128 = self.final128(up2)
             if stage == 128:
-                return out_64, out_128
+                return up_128, out_128
         if stage >= 256:
-            res_256 = self.Conv128_256(res_128)
             up_256 = self.upsample2(out_128)
-            in_256 = torch.cat((res_256, up_256), 1)
-            out_256 = self.final64(in_256)
+            up2_cat = torch.cat((down7, up2), 1)
+            up1 = self.upsample1_3(up2_cat)
+            up1_cat = torch.cat((down8, up1), 1)
+            out_256 = self.finalH(up1_cat)
             if stage == 256:
-                return out_128, out_256
-        if stage >= 512:
-            res_512 = self.Conv64_128(res_256)
-            up_512 = self.upsample2(out_256)
-            in_512 = torch.cat((res_512, up_512), 1)
-            out_512 = self.final64(in_512)
-            if stage == 512:
-                return out_256, out_512
+                return up_256, out_256
+
         # Won't reach
         return None
