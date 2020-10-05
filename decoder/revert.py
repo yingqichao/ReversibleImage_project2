@@ -82,6 +82,8 @@ class Revert(nn.Module):
             nn.Conv2d(128, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
+        self.finalH2 = nn.Sequential(
+            nn.Conv2d(6, 3, kernel_size=1, padding=0))
 
         self.final32 = nn.Sequential(
             nn.Conv2d(512, 3, kernel_size=1, padding=0),
@@ -99,6 +101,7 @@ class Revert(nn.Module):
         #     nn.Conv2d(64, 3, kernel_size=1, padding=0),
         #     nn.Tanh()
         # )
+        self.upsample2 = PureUpsampling(scale=2)
 
 
     def forward(self, ori_image, stage):
@@ -145,7 +148,9 @@ class Revert(nn.Module):
             up2_cat = torch.cat((down7, up2), 1)
             up1 = self.upsample1_3(up2_cat)
             up1_cat = torch.cat((down8, up1), 1)
-            out_256 = self.finalH(up1_cat)
+            up0 = self.finalH(up1_cat)
+            out_cat = torch.cat((up0, ori_image), 1)
+            out_256 = self.finalH2(out_cat)
             if stage == 256:
                 return up_256, out_256
 

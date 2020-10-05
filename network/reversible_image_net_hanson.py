@@ -64,10 +64,9 @@ class ReversibleImageNetwork_hanson:
         # self.gaussian = Gaussian(config).to(self.device)
         self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
         """DownSampler"""
-        self.downsample256_32 = PureUpsampling(scale=32 / 256).to(self.device)
-        self.downsample256_64 = PureUpsampling(scale=64 / 256).to(self.device)
+        self.downsample256_128 = PureUpsampling(scale=64 / 256).to(self.device)
         """Upsample"""
-        self.upsample32_256 = PureUpsampling(scale=256 / 32).to(self.device)
+        self.upsample128_256 = PureUpsampling(scale=256 / 64).to(self.device)
 
     def train_on_batch(self, Cover):
         """
@@ -82,6 +81,10 @@ class ReversibleImageNetwork_hanson:
         # self.reveal_network.train()
         self.revert_network.train()
         self.discriminator.train()
+        self.alpha -= 1/(25*4096)
+        if self.alpha < 0:
+            self.alpha = 0
+
 
         with torch.enable_grad():
             """ Run, Train the discriminator"""
@@ -91,29 +94,30 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_revert_network.zero_grad()
             self.optimizer_discrim.zero_grad()
             Marked = self.preprocessing_network(Cover)
-            Marked_32 = self.downsample256_32(Marked).detach()
-            # Marked_64 = self.downsample256_64(Marked).detach()
+            Cover_128 = self.downsample256_128(Cover).detach()
 
             Attacked = self.jpeg_layer(Marked)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
             # Extracted = self.reveal_network(Cropped_out)
-            R32 = self.revert_network(Cropped_out,stage=32)
-            R32_upsample = self.upsample32_256(R32)
-            Recovered = R32 # * self.alpha + R64 * (1 - self.alpha)
-            loss_R32_global = self.mse_loss(R32, Marked_32)
-            loss_R32_local = self.mse_loss(R32_upsample * cropout_mask, Marked * cropout_mask) * 5
-            loss_R32 = loss_R32_local + loss_R32_global
+            up_128, out_128 = self.revert_network(Cropped_out,stage=64)
+            R128_upsample = self.upsample128_256(out_128)
+            Recovered = up_128 * self.alpha + out_128 * (1 - self.alpha)
+
+            loss_R64_global = self.mse_loss(up_128, Cover_128)
+            loss_R128_global = self.mse_loss(out_128, Cover_128)
+            loss_R128_local = self.mse_loss(R128_upsample * cropout_mask, Cover * cropout_mask) * 5
+            loss_R128 = loss_R64_global * self.alpha + loss_R128_global * (1 - self.alpha)# + loss_R128_local * (1 - self.alpha)
             loss_cover = self.mse_loss(Marked, Cover)
             # loss_recover_global = self.mse_loss(Recovered, Marked_64)
             # loss_recover_local = self.mse_loss(Recovered * cropout_mask, Marked_64 * cropout_mask) * 5
             # loss_recover = loss_recover_local + loss_recover_global
-            loss_enc_dec = self.config.hyper_recovery * loss_R32 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
+            loss_enc_dec = self.config.hyper_recovery * loss_R128 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
             loss_enc_dec.backward()
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
             print(
-                "Curr alpha: {0:.6f}, (Total) Overall Loss: {1:.6f}, local: {2:.6f},  (R32) Overall Loss: {3:.6f}, local: {4:.6f}"
-                .format(self.alpha, loss_R32, loss_R32_local, loss_R32, loss_R32_local))
+                "Curr alpha: {0:.6f}, (Total) {1:.6f}, global: {2:.6f}, local: {4:.6f} (R64) Overall Loss {3:.6f}"
+                .format(self.alpha, loss_R128, loss_R128_global, loss_R64_global,loss_R128_local))
             """ Discriminate """
             # d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
             # d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
@@ -157,7 +161,7 @@ class ReversibleImageNetwork_hanson:
             'loss_sum': loss_enc_dec.item(),
             'loss_localization': 0, #loss_localization.item(),
             'loss_cover': loss_cover.item(),
-            'loss_recover': loss_R32.item(),
+            'loss_recover': loss_R128.item(),
             'loss_discriminator_enc': 0,#g_loss_adv_enc.item(),
             'loss_discriminator_recovery': 0 # g_loss_adv_recovery.item()
         }
@@ -229,9 +233,9 @@ class ReversibleImageNetwork_hanson:
     def load_state_dict_all(self,path):
         # self.discriminator.load_state_dict(torch.load(path + '_discriminator_network.pkl'))
         # print("Successfully Loaded: " + path + '_discriminator_network.pkl')
-        self.preprocessing_network.load_state_dict(torch.load(path + '_prep_network.pkl'))
+        self.preprocessing_network.load_state_dict(torch.load(path + '_prep_network.pkl'), strict=False)
         print("Successfully Loaded: " + path + '_prep_network.pkl')
-        self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'))
+        self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'), strict=False)
         print("Successfully Loaded: " + path + '_revert_network.pkl')
         # self.hiding_network.load_state_dict(torch.load(path + '_hiding_network.pkl'))
         # print("Successfully Loaded: " + path + '_hiding_network.pkl')

@@ -179,16 +179,16 @@ if __name__ =='__main__':
                     print(str)
                 if idx % 128 == 127:
                     for i in range(x_recover.shape[0]):
-                        util.save_images(p7_final[i].cpu(),
-                                         'epoch-{0}-recovery-batch-{1}-{2}_after7.png'.format(epoch, idx, i),
-                                         './Images/recovery',
-                                         std=config.std,
-                                         mean=config.mean)
-                        util.save_images(p5_final[i].cpu(),
-                                         'epoch-{0}-recovery-batch-{1}-{2}_after5.png'.format(epoch, idx, i),
-                                         './Images/recovery',
-                                         std=config.std,
-                                         mean=config.mean)
+                        # util.save_images(p7_final[i].cpu(),
+                        #                  'epoch-{0}-recovery-batch-{1}-{2}_after7.png'.format(epoch, idx, i),
+                        #                  './Images/recovery',
+                        #                  std=config.std,
+                        #                  mean=config.mean)
+                        # util.save_images(p5_final[i].cpu(),
+                        #                  'epoch-{0}-recovery-batch-{1}-{2}_after5.png'.format(epoch, idx, i),
+                        #                  './Images/recovery',
+                        #                  std=config.std,
+                        #                  mean=config.mean)
                         util.save_images(x_attacked[i].cpu(),
                                          'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
                                          './Images/attacked',
@@ -280,7 +280,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        # net.load_model(MODELS_PATH + 'Epoch N12')
+        net.load_state_dict_all(MODELS_PATH + 'Epoch N50')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
         # Plot loss through epochs
