@@ -57,7 +57,7 @@ class PrepStegano(nn.Module):
         )
 
         self.finalH1 = nn.Sequential(
-            SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
+            # SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.Conv2d(64, 3, kernel_size=1, padding=0),
         )
         # self.finalH2 = nn.Sequential(

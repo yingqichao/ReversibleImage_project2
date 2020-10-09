@@ -81,13 +81,13 @@ class Prep_pureUnet(nn.Module):
         )
 
         self.finalH1 = nn.Sequential(
-            SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2),
-            SingleConv(128, out_channels=3, kernel_size=1, stride=1, dilation=1, padding=0)
-            # nn.Conv2d(128, 3, kernel_size=1, padding=0),
-            # nn.Tanh()
+            # SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2),
+            # SingleConv(128, out_channels=3, kernel_size=1, stride=1, dilation=1, padding=0)
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
-            SingleConv(6, out_channels=6, kernel_size=5, stride=1, dilation=1, padding=2),
+            # SingleConv(6, out_channels=6, kernel_size=5, stride=1, dilation=1, padding=2),
             nn.Conv2d(6, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
