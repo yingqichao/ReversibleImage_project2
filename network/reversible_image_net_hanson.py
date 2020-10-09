@@ -69,7 +69,7 @@ class ReversibleImageNetwork_hanson:
         """DownSampler"""
         self.downsample256_128 = PureUpsampling(scale=128/ 256).to(self.device)
         """Upsample"""
-        # self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
+        self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
 
     def getVggLoss(self, marked, cover):
         vgg_on_cov = self.vgg_loss(cover)
@@ -138,7 +138,8 @@ class ReversibleImageNetwork_hanson:
             """Losses"""
             loss_R128_global = self.getVggLoss(up_128, Cover_downsample)
             loss_R256_global = self.getVggLoss(out_128, Cover_downsample)
-            loss_R256_local = self.mse_loss(out_128 * cropout_mask, Cover_downsample * cropout_mask) * 10
+            out_128_upsample = self.upsample128_256(out_128)
+            loss_R256_local = self.mse_loss(out_128_upsample * cropout_mask, Cover * cropout_mask) * 10
             loss_R256 = loss_R128_global * self.alpha + loss_R256_global * (1 - self.alpha) + loss_R256_local * (1 - self.alpha)
             loss_cover = self.getVggLoss(Marked, Cover)
             # loss_recover_global = self.mse_loss(Recovered, Marked_64)
