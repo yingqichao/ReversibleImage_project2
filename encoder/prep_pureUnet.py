@@ -15,7 +15,7 @@ class Prep_pureUnet(nn.Module):
         # input channel: 3, output channel: 96
         """Features with Kernel Size 7---->channel:128 """
         self.downsample_8 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, dilation=1, padding=1),
+            nn.Conv2d(3, 64, kernel_size=5, stride=1, dilation=1, padding=2),
             nn.ELU(inplace=True)
         )
         # 128
@@ -42,50 +42,55 @@ class Prep_pureUnet(nn.Module):
         # 2
         self.upsample8_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 4
         self.upsample7_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 8
         self.upsample6_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 16
         self.upsample5_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 32
         self.upsample4_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 64
         self.upsample3_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 128
         self.upsample2_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(512, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(512, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 256
         self.upsample1_3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(256, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(256, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
 
         self.finalH1 = nn.Sequential(
-            nn.Conv2d(128, 3, kernel_size=1, padding=0),
-            nn.Tanh()
+            SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2),
+            SingleConv(128, out_channels=3, kernel_size=1, stride=1, dilation=1, padding=0)
+            # nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            # nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
-            nn.Conv2d(6, 3, kernel_size=1, padding=0))
+            SingleConv(6, out_channels=6, kernel_size=5, stride=1, dilation=1, padding=2),
+            nn.Conv2d(6, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
 
     def forward(self, p):
         # Features with Kernel Size 7

@@ -4,7 +4,7 @@ class GlobalConfig():
 
     def __init__(self):
 
-        self.num_epochs = 50
+        self.num_epochs = 100
         self.train_batch_size = 2
         self.test_batch_size = 1
 
@@ -35,11 +35,11 @@ class GlobalConfig():
         else:
             self.hyper_cover = 1
             self.hyper_recovery = 2
-        self.hyper_discriminator = 1
+        self.hyper_discriminator = 10
         self.hyper_intermediate = 1
         self.hyper_mask = 5
 
-        self.learning_rate = 0.0001
+        self.learning_rate = 1
 
         self.use_dataset = 'COCO'  # "ImageNet"
         self.MODELS_PATH = './output/models/'

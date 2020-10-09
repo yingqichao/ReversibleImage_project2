@@ -79,11 +79,15 @@ class Revert(nn.Module):
         )
 
         self.finalH = nn.Sequential(
+            SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2),
             nn.Conv2d(128, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
-            nn.Conv2d(6, 3, kernel_size=1, padding=0))
+            SingleConv(6, out_channels=6, kernel_size=5, stride=1, dilation=1, padding=2),
+            nn.Conv2d(6, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
 
         self.final32 = nn.Sequential(
             nn.Conv2d(512, 3, kernel_size=1, padding=0),
@@ -97,6 +101,10 @@ class Revert(nn.Module):
             nn.Conv2d(128, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
+        # self.final256 = nn.Sequential(
+        #     nn.Conv2d(64, 3, kernel_size=1, padding=0),
+        #     nn.Tanh()
+        # )
         # self.final256 = nn.Sequential(
         #     nn.Conv2d(64, 3, kernel_size=1, padding=0),
         #     nn.Tanh()
@@ -148,11 +156,16 @@ class Revert(nn.Module):
             up2_cat = torch.cat((down7, up2), 1)
             up1 = self.upsample1_3(up2_cat)
             up1_cat = torch.cat((down8, up1), 1)
-            up0 = self.finalH(up1_cat)
-            out_cat = torch.cat((up0, ori_image), 1)
-            out_256 = self.finalH2(out_cat)
+            out_256 = self.finalH(up1_cat)
+            out_cat = torch.cat((out_256, ori_image), 1)
+            result = self.finalH2(out_cat)
             if stage == 256:
-                return up_256, out_256
+                return up_256, result
+        if stage == 512:
+
+            out_cat = torch.cat((out_256, ori_image), 1)
+            result = self.finalH2(out_cat)
+            return out_256, result
 
         # Won't reach
         return None
