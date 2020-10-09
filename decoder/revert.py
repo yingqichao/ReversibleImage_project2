@@ -13,28 +13,28 @@ class Revert(nn.Module):
         super(Revert, self).__init__()
         self.config = config
         self.downsample_8 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=5, stride=1, dilation=1, padding=2),
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.ELU(inplace=True)
         )
         # 128
-        self.downsample_7 = SingleConv(64, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_7 = SingleConv(64, out_channels=128, kernel_size=5, stride=2, dilation=1, padding=2)
         # self.Down1_conv_7 = SingleConv(64, out_channels=64, kernel_size=7, stride=1, dilation=1, padding=3)
         # 64
-        self.downsample_6 = SingleConv(128, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_6 = SingleConv(128, out_channels=256, kernel_size=5, stride=2, dilation=1, padding=2)
         # self.Down2_conv_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
         # 32
-        self.downsample_5 = SingleConv(256, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_5 = SingleConv(256, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
         # 16
-        self.downsample_4 = SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_4 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
         # 8
-        self.downsample_3 = SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_3 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
         # 4
-        self.downsample_2 = SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_2 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
         # 2
-        self.downsample_1 = SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+        self.downsample_1 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
         # 1
         self.downsample_0 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=5, stride=1, dilation=1, padding=2),
+            nn.Conv2d(512, 512, kernel_size=5, stride=2, dilation=1, padding=2),
             nn.ELU(inplace=True)
         )
         # 2
