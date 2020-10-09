@@ -79,12 +79,12 @@ class Revert(nn.Module):
         )
 
         self.finalH = nn.Sequential(
-            SingleConv(128, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2),
+            SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.Conv2d(128, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
-            SingleConv(6, out_channels=6, kernel_size=5, stride=1, dilation=1, padding=2),
+            SingleConv(6, out_channels=6, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.Conv2d(6, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )

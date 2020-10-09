@@ -17,8 +17,8 @@ class SingleDeConv(nn.Module):
         self.single_conv = nn.Sequential(
             nn.ConvTranspose2d(in_channels, out_channels,
                       kernel_size=kernel_size, padding=padding,stride=stride,dilation=dilation),
-            # nn.BatchNorm2d(out_channels),
-            nn.InstanceNorm2d(out_channels),
+            nn.BatchNorm2d(out_channels),
+            # nn.InstanceNorm2d(out_channels),
             nn.ELU(inplace=True)
         )
 

@@ -246,7 +246,7 @@ if __name__ =='__main__':
             TRAIN_PATH,
             transforms.Compose([
                 transforms.Scale(config.Width),
-                transforms.RandomCrop(224),
+                transforms.RandomCrop(200),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=config.mean,
                                      std=config.std),

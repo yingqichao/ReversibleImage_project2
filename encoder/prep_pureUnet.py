@@ -15,7 +15,7 @@ class Prep_pureUnet(nn.Module):
         # input channel: 3, output channel: 96
         """Features with Kernel Size 7---->channel:128 """
         self.downsample_8 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=5, stride=1, dilation=1, padding=2),
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.ELU(inplace=True)
         )
         # 128

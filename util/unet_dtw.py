@@ -6,12 +6,12 @@ class DoubleConv(nn.Module):
         super(DoubleConv, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=True),
-            # nn.BatchNorm2d(outchannel),
-            nn.InstanceNorm2d(outchannel),
+            nn.BatchNorm2d(outchannel),
+            # nn.InstanceNorm2d(outchannel),
             nn.ReLU(inplace=True),
             nn.Conv2d(outchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=True),
-            # nn.BatchNorm2d(outchannel),
-            nn.InstanceNorm2d(outchannel),
+            nn.BatchNorm2d(outchannel),
+            # nn.InstanceNorm2d(outchannel),
             nn.ReLU(inplace=True)
         )
 
@@ -25,8 +25,8 @@ class up_conv(nn.Module):
         self.up = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=True),
-            # nn.BatchNorm2d(outchannel),
-            nn.InstanceNorm2d(outchannel),
+            nn.BatchNorm2d(outchannel),
+            # nn.InstanceNorm2d(outchannel),
             nn.ReLU(inplace=True)
         )
 
