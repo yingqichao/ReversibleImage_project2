@@ -247,7 +247,7 @@ class ReversibleImageNetwork_qichao:
         print("Successfully Saved: " + path + '_revert_network.pth')
         torch.save(self.preprocessing_network, path + '_prep_network.pth')
         print("Successfully Saved: " + path + '_prep_network.pth')
-        torch.save(self.discriminator_HiddenRecovery, path + '_discriminator_HiddenRecovery')
+        torch.save(self.discriminator_HiddenRecovery, path + '_discriminator_HiddenRecovery.pth')
         print("Successfully Saved: " + path + '_discriminator_HiddenRecovery.pth')
         torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pth')
         print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth')

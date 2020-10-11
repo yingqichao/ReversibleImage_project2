@@ -245,8 +245,8 @@ if __name__ =='__main__':
         datasets.ImageFolder(
             TRAIN_PATH,
             transforms.Compose([
-                transforms.Scale(config.Width),
-                transforms.RandomCrop(200),
+                transforms.Scale(256),
+                transforms.RandomCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=config.mean,
                                      std=config.std),
@@ -255,17 +255,17 @@ if __name__ =='__main__':
         pin_memory=True, shuffle=True, drop_last=True)
 
     # Creates test set
-    test_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(
-            TEST_PATH,
-            transforms.Compose([
-                transforms.Scale(config.Width),
-                transforms.RandomCrop(config.Width),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=config.mean,
-                                     std=config.std)
-            ])), batch_size=test_batch_size, num_workers=1,
-        pin_memory=True, shuffle=True, drop_last=True)
+    # test_loader = torch.utils.data.DataLoader(
+    #     datasets.ImageFolder(
+    #         TEST_PATH,
+    #         transforms.Compose([
+    #             transforms.Scale(config.Width),
+    #             transforms.RandomCrop(config.Width),
+    #             transforms.ToTensor(),
+    #             transforms.Normalize(mean=config.mean,
+    #                                  std=config.std)
+    #         ])), batch_size=test_batch_size, num_workers=1,
+    #     pin_memory=True, shuffle=True, drop_last=True)
 
     """ Begin Pre-Training """
     # if not config.skipPreTraining:
@@ -282,7 +282,7 @@ if __name__ =='__main__':
 
     if not config.skipMainTraining:
         # net.load_model(MODELS_PATH + 'Epoch N2')
-        # net.load_state_dict_all(MODELS_PATH + 'Epoch N42')
+        # net.load_state_dict_all(MODELS_PATH + 'Epoch N7')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
         # Plot loss through epochs
