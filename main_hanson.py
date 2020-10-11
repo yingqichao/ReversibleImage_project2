@@ -282,7 +282,7 @@ if __name__ =='__main__':
 
     if not config.skipMainTraining:
         # net.load_model(MODELS_PATH + 'Epoch N2')
-        net.load_state_dict_all(MODELS_PATH + 'Epoch N42')
+        net.load_state_dict_all(MODELS_PATH + 'Epoch N16')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
         # Plot loss through epochs

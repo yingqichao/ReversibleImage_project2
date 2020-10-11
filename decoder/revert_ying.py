@@ -72,7 +72,7 @@ class Revert_ying(nn.Module):
         self.retrieve2 = SingleConv(50, 50, kernel_size=3, stride=1, dilation=1, padding=1)
         self.retrieve3 = nn.Sequential(
             nn.Conv2d(50, 3, kernel_size=3, stride=1, dilation=1, padding=1),
-            nn.Tanh()
+            # nn.Tanh()
         )
 
         # self.finalH = nn.Sequential(

@@ -80,7 +80,7 @@ class RevertNew_P7(nn.Module):
         self.retrieve3_2 = SingleConv(16, 8, kernel_size=3, stride=1, dilation=1, padding=1)
         self.retrieve3_3 = nn.Sequential(
             nn.Conv2d(8, 3, kernel_size=3, stride=1, dilation=1, padding=1),
-            nn.Tanh()
+            # nn.Tanh()
         )
 
 

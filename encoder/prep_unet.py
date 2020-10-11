@@ -69,7 +69,7 @@ class PrepNetwork_Unet(nn.Module):
         self.retrieve2 = SingleConv(128, 64, kernel_size=3, stride=1, dilation=1, padding=1)
         self.retrieve3 = nn.Sequential(
             nn.Conv2d(64, 3, kernel_size=3, stride=1, dilation=1, padding=1),
-            nn.Tanh()
+            # nn.Tanh()
         )
 
         # self.finalH = nn.Sequential(
