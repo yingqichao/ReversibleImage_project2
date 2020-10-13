@@ -13,8 +13,8 @@ class GlobalConfig():
         self.block_size = 16
         self.decoder_channels = 128
         self.min_required_block = 64
-        self.min_required_block_portion = 0.2
-        self.crop_size = (0.2, 0.2)
+        self.attack_portion = 0.2
+        self.crop_size = 0.2
         self.encoder_features = 64
         self.water_features = 256
         self.device = torch.device("cuda")
@@ -35,7 +35,7 @@ class GlobalConfig():
         else:
             self.hyper_cover = 1
             self.hyper_recovery = 2
-        self.hyper_discriminator = 10
+        self.hyper_discriminator = 0.1
         self.hyper_intermediate = 1
         self.hyper_mask = 5
 
@@ -48,8 +48,8 @@ class GlobalConfig():
         self.TEST_PATH = './sample/test_coco/'
         self.skipTraining = False
         # Discriminator
-        self.discriminator_channels = 64
-        self.discriminator_blocks = 3
+        self.discriminator_channels = 128
+        self.discriminator_blocks = 6
 
 
         # Mean and std deviation of imagenet dataset. Source: http://cs231n.stanford.edu/reports/2017/pdfs/101.pdf

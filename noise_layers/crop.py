@@ -62,16 +62,21 @@ class Crop(nn.Module):
         self.width_ratio_range = width_ratio_range
 
 
-    def forward(self, noised_and_cover):
-        noised_image = noised_and_cover[0]
+    def forward(self, noised_image):
+        # noised_image = noised_and_cover[0]
         # crop_rectangle is in form (from, to) where @from and @to are 2D points -- (height, width)
 
-        h_start, h_end, w_start, w_end = get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
+        h_start, h_end, w_start, w_end, ratio = get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
 
-        noised_and_cover[0] = noised_image[
+        noised_image = noised_image[
                :,
                :,
                h_start: h_end,
                w_start: w_end].clone()
-
-        return noised_and_cover
+        # noised_and_cover[0] = noised_image[
+        #        :,
+        #        :,
+        #        h_start: h_end,
+        #        w_start: w_end].clone()
+        # print("Crop area: [{0}:{1},{2}:{3}],ratio:{4}".format( h_start, h_end, w_start, w_end,ratio))
+        return noised_image

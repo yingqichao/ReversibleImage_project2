@@ -12,6 +12,9 @@ from network.pure_upsample import PureUpsampling
 from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.crop import Crop
+from noise_layers.resize import Resize
+from noise_layers.gaussian import Gaussian
 from encoder.prep_stegano import PrepStegano
 from decoder.revert_stegano import RevertStegano
 
@@ -21,7 +24,7 @@ class ReversibleImageNetwork_qichao:
         super(ReversibleImageNetwork_qichao, self).__init__()
         """ Settings """
         self.alpha = 0.0
-        self.roundCount = 0
+        self.roundCount = 0.0
         self.config = config
         self.device = self.config.device
         self.username = username
@@ -64,8 +67,9 @@ class ReversibleImageNetwork_qichao:
         """Attack Layers"""
         self.cropout_layer = Cropout(config).to(self.device)
         self.jpeg_layer = JpegCompression(self.device).to(self.device)
-        # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
-        # self.gaussian = Gaussian(config).to(self.device)
+        self.crop_layer = Crop((0.2,0.5),(0.2,0.5)).to(self.device)
+        self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
+        self.gaussian = Gaussian(config).to(self.device)
         self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
         """DownSampler"""
         # self.downsample256_128 = PureUpsampling(scale=128/ 256).to(self.device)
@@ -93,9 +97,11 @@ class ReversibleImageNetwork_qichao:
         self.discriminator_CoverHidden.train()
         self.discriminator_HiddenRecovery.train()
         self.alpha -= 1/(50*4096)
-        self.roundCount += 1/(50*4096)
+        self.roundCount += 1/(2*10240)
         if self.alpha < 0:
             self.alpha = 0
+        if self.roundCount > 1:
+            self.roundCount = 1
 
 
         with torch.enable_grad():
@@ -108,11 +114,13 @@ class ReversibleImageNetwork_qichao:
             self.optimizer_discrim_HiddenRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
             # Cover_128 = self.downsample256_128(Cover).detach()
-
-            Attacked = self.jpeg_layer(Marked)
-            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
+            Gauss = self.gaussian(Marked)
+            Attacked = self.jpeg_layer(Gauss)
+            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
+                                                                          require_attack=self.config.attack_portion*(0.7+0.3*self.roundCount),
+                                                                          max_size=self.config.crop_size*(0.7+0.3*self.roundCount))
             # Extracted = self.reveal_network(Cropped_out)
-            Recovered = self.revert_network(Cropped_out)
+            Recovered = self.revert_network(Cropped_out, cropout_mask)
             # Recovered = up_256 * self.alpha + out_256 * (1 - self.alpha)
 
             """ Discriminate """
@@ -128,32 +136,39 @@ class ReversibleImageNetwork_qichao:
             d_loss_on_encoded.backward()
             self.optimizer_discrim_CoverHidden.step()
             """Discriminator B"""
-            d_on_cover = self.discriminator_HiddenRecovery(Cover)
-            d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
-            d_loss_on_cover.backward()
-            d_on_encoded = self.discriminator_HiddenRecovery(Recovered.detach())
-            d_loss_on_recovery = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
+            d_loss_on_cover_B = 0
+            for i in range(5):
+                d_on_cover = self.discriminator_HiddenRecovery(self.crop_layer(Cover))
+                d_loss_on_cover_B += self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
+            d_loss_on_cover_B.backward()
+            d_loss_on_recovery = 0
+            for i in range(5):
+                d_on_encoded = self.discriminator_HiddenRecovery(self.crop_layer(Recovered.detach()))
+                d_loss_on_recovery += self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
             d_loss_on_recovery.backward()
+            print("-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B,d_loss_on_recovery))
             self.optimizer_discrim_HiddenRecovery.step()
 
             """Losses"""
-            loss_R256_global = self.getVggLoss(Recovered, Cover)
-            loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) * 50
-            loss_R256 = loss_R256_global + loss_R256_local
+            # loss_R256_global = self.getVggLoss(Recovered, Cover)
+            loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) * 100
+            loss_R256 = loss_R256_local
             loss_cover = self.getVggLoss(Marked, Cover)
             loss_enc_dec = self.config.hyper_recovery * loss_R256 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
             """Adversary Loss"""
             d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
-            d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered)
-            g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
+            g_loss_adv_recovery = 0
+            for i in range(5):
+                d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(self.crop_layer(Recovered))
+                g_loss_adv_recovery += self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
             loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator + g_loss_adv_recovery * self.config.hyper_discriminator
             loss_enc_dec.backward()
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
             print(
-                "(Total) {0:.6f}, global: {1:.6f}, local: {2:.6f}"
-                .format(loss_R256, loss_R256_global, loss_R256_local))
+                "Cropout Local Loss {0:.6f}"
+                .format(loss_R256))
 
 
             """ Train PrepNetwork and RevertNetwork """
@@ -273,10 +288,10 @@ class ReversibleImageNetwork_qichao:
         print("Successfully Loaded: " + path + '_prep_network.pth')
         self.revert_network = torch.load(path + '_revert_network.pth')
         print("Successfully Loaded: " + path + '_revert_network.pth')
-        # self.hiding_network = torch.load(path + '_hiding_network.pth')
-        # print("Successfully Loaded: " + path + '_hiding_network.pth')
-        # self.reveal_network = torch.load(path + '_reveal_network.pth')
-        # print("Successfully Loaded: " + path + '_reveal_network.pth')
+        # self.discriminator_HiddenRecovery = torch.load(path + '_discriminator_HiddenRecovery.pth')
+        # print("Successfully Loaded: " + path + '_discriminator_HiddenRecovery.pth')
+        # self.discriminator_CoverHidden = torch.load(path + '_discriminator_CoverHidden.pth')
+        # print("Successfully Loaded: " + path + '_discriminator_CoverHidden.pth')
 
 
     # def load_state_dict_pretrain(self, path):

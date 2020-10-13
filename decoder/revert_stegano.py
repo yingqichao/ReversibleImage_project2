@@ -72,7 +72,7 @@ class RevertStegano(nn.Module):
         #     nn.Tanh()
         # )
 
-    def forward(self, p):
+    def forward(self, p, crop_mask):
         # Features with Kernel Size 7
         down8 = self.downsample_1(p)
         down7 = self.downsample_2(down8)
@@ -92,5 +92,5 @@ class RevertStegano(nn.Module):
         up1 = self.upsample1(up2_cat)
         # up1_cat = torch.cat((down8, down7, down6, down5, dilate, up3, up2, up1), 1)
         up0 = self.finalH1(up1)
-        out = p + up0
+        out = p*(1-crop_mask) + up0*crop_mask
         return out
