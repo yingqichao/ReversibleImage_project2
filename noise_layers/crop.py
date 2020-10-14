@@ -61,13 +61,17 @@ class Crop(nn.Module):
         self.height_ratio_range = height_ratio_range
         self.width_ratio_range = width_ratio_range
 
+    def get_random_rectangle_inside(self, noised_image):
+        return get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
 
-    def forward(self, noised_image):
+
+    def forward(self, noised_image, shape=None):
         # noised_image = noised_and_cover[0]
         # crop_rectangle is in form (from, to) where @from and @to are 2D points -- (height, width)
-
-        h_start, h_end, w_start, w_end, ratio = get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
-
+        if shape is None:
+            h_start, h_end, w_start, w_end, ratio = get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
+        else:
+            h_start, h_end, w_start, w_end, _ = shape
         noised_image = noised_image[
                :,
                :,

@@ -159,9 +159,9 @@ class Revert(nn.Module):
             out_256 = self.finalH1(up1_cat)
             # out_cat = torch.cat((out_256, ori_image), 1)
             # result = self.finalH2(out_cat)
-            result = ori_image + out_256
+            # result = ori_image + out_256
             if stage == 256:
-                return up_256, result
+                return up_256, out_256
 
         # Won't reach
         return None

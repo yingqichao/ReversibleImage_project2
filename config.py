@@ -45,7 +45,7 @@ class GlobalConfig():
         self.MODELS_PATH = './output/models/'
         self.VALID_PATH = './sample/valid_coco/'
         self.TRAIN_PATH = './sample/train_coco/'
-        self.TEST_PATH = './sample/test_coco/'
+        self.TEST_PATH = './sample/Test/'
         self.skipTraining = False
         # Discriminator
         self.discriminator_channels = 128
