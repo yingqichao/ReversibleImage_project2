@@ -22,6 +22,7 @@ class PrepStegano(nn.Module):
         self.downsample_2 = nn.Sequential(
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
 
@@ -29,47 +30,54 @@ class PrepStegano(nn.Module):
         self.downsample_3 = nn.Sequential(
             SingleConv(128, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 32
         self.downsample_4 = nn.Sequential(
             SingleConv(192, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 16
         self.downsample_5 = nn.Sequential(
             SingleConv(256, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 32
         self.upsample4 = nn.Sequential(
             SingleConv(320, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 64
         self.upsample3 = nn.Sequential(
             SingleConv(384, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 128
         self.upsample2 = nn.Sequential(
             SingleConv(448, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 256
         self.upsample1 = nn.Sequential(
             SingleConv(512, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+            SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
 
         self.finalH1 = nn.Sequential(
-            # SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
+            SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.Conv2d(64, 3, kernel_size=1, padding=0),
             # nn.Tanh()
         )

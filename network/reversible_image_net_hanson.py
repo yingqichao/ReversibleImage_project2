@@ -69,7 +69,7 @@ class ReversibleImageNetwork_hanson:
         # self.gaussian = Gaussian(config).to(self.device)
         self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
         """DownSampler"""
-        self.downsample256_128 = PureUpsampling(scale=128/ 256).to(self.device)
+        self.downsample256_128 = PureUpsampling(scale=128 / 256).to(self.device)
         """Upsample"""
         self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
 
@@ -158,17 +158,18 @@ class ReversibleImageNetwork_hanson:
             d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
             g_loss_adv_recovery, loss_R256_global = 0, 0
-            report_str = ''
+            report_str, max_patch_vgg_loss = '', 0
             for i in range(8):
                 crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
                 Recovered_portion = self.crop_layer(Recovered, shape=crop_shape)
                 Cover_portion = self.crop_layer(Cover, shape=crop_shape)
                 d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered_portion)
                 patch_vggLoss = self.getVggLoss(Recovered_portion, Cover_portion)
+                max_patch_vgg_loss = max(patch_vggLoss.item(), max_patch_vgg_loss)
                 loss_R256_global += patch_vggLoss
                 g_loss_adv_recovery += self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
                 report_str += "Patch {0:.6f} ".format(patch_vggLoss)
-            loss_R256_global /= 8
+            loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
             loss_R256 = (loss_R256_local + loss_R256_global) / 2
             loss_enc_dec = self.config.hyper_recovery * loss_R256 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
             loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator + g_loss_adv_recovery * self.config.hyper_discriminator
