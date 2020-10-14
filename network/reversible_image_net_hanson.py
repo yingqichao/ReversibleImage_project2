@@ -220,13 +220,15 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_CoverHidden.zero_grad()
             self.optimizer_discrim_HiddenRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
-            # Cover_128 = self.downsample256_128(Cover).detach()
+            Cover_128 = self.downsample256_128(Cover).detach()
 
             Attacked = Marked
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
             up_128, out_128 = self.revert_network(Cropped_out,stage=128)
             Cover_downsample = self.downsample256_128(Cover)
             Recovered = up_128 * self.alpha + out_128 * (1 - self.alpha)
+            Recovered_256 = self.upsample128_256(Recovered)
+            up_256 = self.upsample128_256(up_128)
 
             """ Discriminate """
             d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
@@ -235,9 +237,9 @@ class ReversibleImageNetwork_hanson:
 
             """Losses"""
             portion_attack = 0.2
-            loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            loss_R128_global = self.getVggLoss(up_128, Cover_downsample)
-            loss_R128_local = self.mse_loss(up_128 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
+            loss_R256_local = self.mse_loss(Recovered_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
+            loss_R128_global = self.getVggLoss(up_256, Cover)
+            loss_R128_local = self.mse_loss(up_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
             print("Loss on 128: Global {0:.6f} Local {1:.6f}".format(loss_R128_global,loss_R128_local))
             # loss_R256_global = self.getVggLoss(out_128, Cover_downsample)
             # out_128_upsample = self.upsample128_256(out_128)
@@ -250,8 +252,8 @@ class ReversibleImageNetwork_hanson:
             g_loss_adv_recovery, loss_R256_global = 0, 0
             report_str = ''
             for i in range(8):
-                crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
-                Recovered_portion = self.crop_layer(Recovered, shape=crop_shape)
+                crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered_256)
+                Recovered_portion = self.crop_layer(Recovered_256, shape=crop_shape)
                 Cover_portion = self.crop_layer(Cover, shape=crop_shape)
                 d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered_portion)
                 patch_vggLoss = self.getVggLoss(Recovered_portion, Cover_portion)

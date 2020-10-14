@@ -170,7 +170,7 @@ if __name__ =='__main__':
             TEST_PATH,
             transforms.Compose([
                 transforms.Scale(256),
-                transforms.RandomCrop(224),
+                transforms.RandomCrop(256),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=config.mean,
                                      std=config.std),
