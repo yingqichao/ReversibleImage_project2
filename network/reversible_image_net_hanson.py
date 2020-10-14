@@ -112,9 +112,9 @@ class ReversibleImageNetwork_hanson:
 
             Attacked = self.jpeg_layer(Marked)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
-            up_128, out_128 = self.revert_network(Cropped_out,stage=128)
-            Cover_downsample = self.downsample256_128(Cover)
-            Recovered = up_128 * self.alpha + out_128 * (1 - self.alpha)
+            up_256, out_256 = self.revert_network(Cropped_out,stage=256)
+            # Cover_downsample = self.downsample256_128(Cover)
+            Recovered = up_256 * self.alpha + out_256 * (1 - self.alpha)
 
             """ Discriminate """
             d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
@@ -130,7 +130,7 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_CoverHidden.step()
             """Discriminator B"""
             d_loss_on_cover_B = 0
-            for i in range(5):
+            for i in range(8):
                 d_on_cover = self.discriminator_HiddenRecovery(self.crop_layer(Cover))
                 d_loss_on_cover_B += self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
             d_loss_on_cover_B.backward()
@@ -146,8 +146,8 @@ class ReversibleImageNetwork_hanson:
             """Losses"""
             portion_attack = 0.2
             loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            loss_R128_global = self.getVggLoss(up_128, Cover_downsample)
-            loss_R128_local = self.mse_loss(up_128 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
+            loss_R128_global = self.getVggLoss(up_256, Cover)
+            loss_R128_local = self.mse_loss(up_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
             print("Loss on 128: Global {0:.6f} Local {1:.6f}".format(loss_R128_global,loss_R128_local))
             # loss_R256_global = self.getVggLoss(out_128, Cover_downsample)
             # out_128_upsample = self.upsample128_256(out_128)
