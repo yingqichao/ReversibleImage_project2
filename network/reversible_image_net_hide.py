@@ -246,7 +246,7 @@ class ReversibleImageNetwork_qichao:
             self.optimizer_discrim_HiddenRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
 
-            Attacked = 0.5*Marked+0.5*self.jpeg_layer(Marked)
+            Attacked = Marked #0.5*Marked+0.5*self.jpeg_layer(Marked)
             portion_attack, portion_maxPatch = self.config.attack_portion * (0.7 + 0.0 * self.roundCount), self.config.crop_size * (0.7 + 0.0 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,

@@ -221,7 +221,7 @@ class ReversibleImageNetwork_hanson:
             Marked = self.preprocessing_network(Cover)
             # Cover_128 = self.downsample256_128(Cover).detach()
 
-            Attacked = self.jpeg_layer(Marked)
+            Attacked = Marked
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
             up_128, out_128 = self.revert_network(Cropped_out,stage=128)
             Cover_downsample = self.downsample256_128(Cover)

@@ -210,7 +210,7 @@ if __name__ =='__main__':
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = test(net, test_loader, config)
         # Plot loss through epochs
-        util.plt_plot(hist_loss_cover)
-        util.plt_plot(hist_loss_recover)
-        util.plt_plot(hist_loss_discriminator_enc)
-        util.plt_plot(hist_loss_discriminator_recovery)
+        # util.plt_plot(hist_loss_cover)
+        # util.plt_plot(hist_loss_recover)
+        # util.plt_plot(hist_loss_discriminator_enc)
+        # util.plt_plot(hist_loss_discriminator_recovery)
