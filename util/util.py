@@ -23,6 +23,12 @@ def denormalize(image, std, mean):
         image[t, :, :] = (image[t, :, :] * std[t]) + mean[t]
     return image
 
+def normalize(image, std, mean):
+    ''' normalize a tensor of images.'''
+
+    for t in range(image.shape[0]):
+        image[t, :, :] = (image[t, :, :]-mean[t]) / std[t]
+    return image
 
 def imshow(input_img, text, std, mean):
     '''Prints out an image given in tensor format.'''

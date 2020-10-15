@@ -98,7 +98,6 @@ class ReversibleImageNetwork_hanson:
         if self.alpha < 0:
             self.alpha = 0
 
-
         with torch.enable_grad():
             """ Run, Train the discriminator"""
             self.optimizer_preprocessing_network.zero_grad()

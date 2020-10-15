@@ -83,8 +83,9 @@ class RevertStegano(nn.Module):
         )
 
         self.finalH1 = nn.Sequential(
-            # SingleConv(512, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
-            nn.Conv2d(576, 3, kernel_size=1, padding=0),
+            SingleConv(576, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
+            SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
+            nn.Conv2d(64, 3, kernel_size=1, padding=0),
             # nn.Tanh()
         )
         # self.finalH2 = nn.Sequential(

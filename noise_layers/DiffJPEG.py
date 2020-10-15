@@ -1,13 +1,15 @@
 # Pytorch
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 # Local
 from util.modules import compress_jpeg, decompress_jpeg
 from noise_layers.utils import diff_round, quality_to_factor
-
+from util import util
+from config import GlobalConfig
 
 class DiffJPEG(nn.Module):
-    def __init__(self, height, width, differentiable=True, quality=80):
+    def __init__(self, height, width, differentiable=True, quality=80, config=GlobalConfig()):
         ''' Initialize the DiffJPEG layer
         Inputs:
             height(int): Original image hieght
@@ -17,6 +19,7 @@ class DiffJPEG(nn.Module):
             quality(float): Quality factor for jpeg compression scheme. 
         '''
         super(DiffJPEG, self).__init__()
+        self.config = config
         if differentiable:
             rounding = diff_round
         else:
@@ -28,8 +31,10 @@ class DiffJPEG(nn.Module):
 
     def forward(self, x):
         '''
-
+        需要先做denormalize，再normalize回来
         '''
-        y, cb, cr = self.compress(x)
+        denorm = util.denormalize(x, self.config.std, self.config.mean)
+        y, cb, cr = self.compress(denorm)
         recovered = self.decompress(y, cb, cr)
-        return recovered
+        recovered_norm = util.normalize(recovered, self.config.std, self.config.mean)
+        return recovered_norm
