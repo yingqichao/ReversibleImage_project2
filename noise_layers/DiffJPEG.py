@@ -33,8 +33,8 @@ class DiffJPEG(nn.Module):
         '''
         需要先做denormalize，再normalize回来
         '''
-        denorm = util.denormalize(x, self.config.std, self.config.mean)
+        denorm = util.denormalize_batch(x, self.config.std, self.config.mean)
         y, cb, cr = self.compress(denorm)
         recovered = self.decompress(y, cb, cr)
-        recovered_norm = util.normalize(recovered, self.config.std, self.config.mean)
+        recovered_norm = util.normalize_batch(recovered, self.config.std, self.config.mean)
         return recovered_norm

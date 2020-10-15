@@ -101,7 +101,6 @@ class ReversibleImageNetwork_qichao:
         if self.roundCount > 1:
             self.roundCount = 1
 
-
         with torch.enable_grad():
             """ Run, Train the discriminator"""
             self.optimizer_preprocessing_network.zero_grad()
