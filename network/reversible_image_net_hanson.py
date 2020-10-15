@@ -93,8 +93,8 @@ class ReversibleImageNetwork_hanson:
         self.revert_network.train()
         self.discriminator_CoverHidden.train()
         self.discriminator_HiddenRecovery.train()
-        self.alpha -= 1/(50*10240)
-        self.roundCount += 1/(20*10240)
+        self.alpha -= 1/(20*10240)
+        self.roundCount += 1/(50*10240)
         if self.alpha < 0:
             self.alpha = 0
 
@@ -111,8 +111,8 @@ class ReversibleImageNetwork_hanson:
             # Cover_128 = self.downsample256_128(Cover).detach()
 
             Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.7 + 0.3 * self.roundCount), \
-                                               self.config.crop_size * (0.7 + 0.3 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.7 + 0.5 * self.roundCount), \
+                                               self.config.crop_size * (0.7 + 0.5 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,stage=256)
