@@ -2,9 +2,6 @@ import torch
 import torch.nn as nn
 
 from config import GlobalConfig
-from network.conv_bn_relu import ConvBNRelu
-from network.double_conv import DoubleConv
-import util
 from network.single_conv import SingleConv
 from network.pure_upsample import PureUpsampling
 

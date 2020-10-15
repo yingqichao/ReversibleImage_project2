@@ -6,15 +6,11 @@ import torch
 import torchvision.transforms as transforms
 from torch import utils
 from torchvision import datasets
-from network.reversible_image_net_hide import ReversibleImageNetwork_qichao
 # from network.localize_net import Localize_hanson
-import util
+from util import util
 from config import GlobalConfig
 # from network.reversible_image_net_hide import RNet_test
 from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
-from network.reversible_image_net import ReversibleImageNetwork_ying
-from ImageLoader_specific import ImageLoader
-
 
 if __name__ =='__main__':
     # Setting
@@ -205,7 +201,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N1')
+        net.load_model(MODELS_PATH + 'Epoch N17')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = test(net, test_loader, config)

@@ -1,7 +1,4 @@
 from config import GlobalConfig
-from network.conv_bn_relu import ConvBNRelu
-from network.double_conv import DoubleConv
-import util
 import torch
 import torch.nn as nn
 from network.single_conv import SingleConv

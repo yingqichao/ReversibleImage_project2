@@ -2,9 +2,7 @@ import torch
 import torch.nn as nn
 
 from config import GlobalConfig
-from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
-import util
 
 
 class Decoder_noPool(nn.Module):

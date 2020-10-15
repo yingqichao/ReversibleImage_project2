@@ -17,7 +17,7 @@ from noise_layers.resize import Resize
 from noise_layers.gaussian import Gaussian
 from encoder.prep_stegano import PrepStegano
 from decoder.revert_stegano import RevertStegano
-
+from noise_layers.DiffJPEG import DiffJPEG
 
 class ReversibleImageNetwork_qichao:
     def __init__(self, username, config=GlobalConfig()):
@@ -66,11 +66,11 @@ class ReversibleImageNetwork_qichao:
 
         """Attack Layers"""
         self.cropout_layer = Cropout(config).to(self.device)
-        self.jpeg_layer = JpegCompression(self.device).to(self.device)
+        self.jpeg_layer = DiffJPEG(224, 224, differentiable=True, quality=80).to(self.device)
         self.crop_layer = Crop((0.2,0.5),(0.2,0.5)).to(self.device)
-        self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
-        self.gaussian = Gaussian(config).to(self.device)
-        self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
+        # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
+        # self.gaussian = Gaussian(config).to(self.device)
+        # self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
         """DownSampler"""
         # self.downsample256_128 = PureUpsampling(scale=128/ 256).to(self.device)
         """Upsample"""

@@ -48,7 +48,7 @@ class GlobalConfig():
         self.TEST_PATH = './sample/Test/'
         self.skipTraining = False
         # Discriminator
-        self.discriminator_channels = 128
+        self.discriminator_channels = 64
         self.discriminator_blocks = 6
 
 

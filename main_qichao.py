@@ -1,18 +1,14 @@
 # toooest %matplotlib inline
 import os
-from loss.vgg_loss import VGGLoss
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.optim as optim
 import torchvision.transforms as transforms
 from torch import utils
-from torchvision import datasets, utils
+from torchvision import datasets
 from network.reversible_image_net import ReversibleImageNetwork
 from config import GlobalConfig
-import torch.nn as nn
-import torch.nn.functional as F
-import util
+from util import util
 
 # Directory path
 # os.chdir("..")

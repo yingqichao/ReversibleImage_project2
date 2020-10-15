@@ -8,12 +8,9 @@ from torch import utils
 from torchvision import datasets
 from network.reversible_image_net_hide import ReversibleImageNetwork_qichao
 # from network.localize_net import Localize_hanson
-import util
+from util import util
 from config import GlobalConfig
 # from network.reversible_image_net_hide import RNet_test
-from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
-from network.reversible_image_net import ReversibleImageNetwork_ying
-from ImageLoader_specific import ImageLoader
 
 
 if __name__ =='__main__':

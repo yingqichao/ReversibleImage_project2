@@ -1,21 +1,14 @@
-from itertools import islice
 # %matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import util
-from torch.autograd import Variable
+from util import util
 from torch import utils
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import os
-import pickle
 from torchvision import datasets, utils
 import torchvision.transforms as transforms
-from torchvision.transforms import ToPILImage
-from random import shuffle
-from IPython.display import Image
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.resize import Resize
 from noise_layers.gaussian import Gaussian

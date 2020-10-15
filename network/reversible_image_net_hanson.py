@@ -14,7 +14,7 @@ from noise_layers.dropout import Dropout
 from noise_layers.crop import Crop
 from noise_layers.jpeg_compression import JpegCompression
 from encoder.prep_pureUnet import Prep_pureUnet
-
+from noise_layers.DiffJPEG import DiffJPEG
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):
@@ -63,7 +63,7 @@ class ReversibleImageNetwork_hanson:
 
         """Attack Layers"""
         self.cropout_layer = Cropout(config).to(self.device)
-        self.jpeg_layer = JpegCompression(self.device).to(self.device)
+        self.jpeg_layer = DiffJPEG(256, 256, differentiable=True, quality=80).to(self.device)
         self.crop_layer = Crop((0.2, 0.5), (0.2, 0.5)).to(self.device)
         # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
         # self.gaussian = Gaussian(config).to(self.device)
@@ -111,7 +111,10 @@ class ReversibleImageNetwork_hanson:
             # Cover_128 = self.downsample256_128(Cover).detach()
 
             Attacked = self.jpeg_layer(Marked)
-            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.5 + 0.5 * self.roundCount), \
+                                               self.config.crop_size * (0.5 + 0.5 * self.roundCount)
+            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
+                                                                          require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,stage=256)
             # Cover_downsample = self.downsample256_128(Cover)
             Recovered = up_256 * self.alpha + out_256 * (1 - self.alpha)
@@ -144,7 +147,7 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_HiddenRecovery.step()
 
             """Losses"""
-            portion_attack = 0.2
+
             loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
             loss_R128_global = self.getVggLoss(up_256, Cover)
             loss_R128_local = self.mse_loss(up_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
@@ -223,10 +226,12 @@ class ReversibleImageNetwork_hanson:
             Cover_128 = self.downsample256_128(Cover).detach()
 
             Attacked = Marked
-            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked)
+            portion_attack, portion_maxPatch = 0.2, 0.2
+            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
+                                                                          require_attack=portion_attack,max_size=portion_maxPatch)
             up_128, out_128 = self.revert_network(Cropped_out,stage=128)
             Cover_downsample = self.downsample256_128(Cover)
-            Recovered = up_128 * self.alpha + out_128 * (1 - self.alpha)
+            Recovered = out_128
             Recovered_256 = self.upsample128_256(Recovered)
             up_256 = self.upsample128_256(up_128)
 
@@ -236,7 +241,7 @@ class ReversibleImageNetwork_hanson:
             g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
 
             """Losses"""
-            portion_attack = 0.2
+
             loss_R256_local = self.mse_loss(Recovered_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
             loss_R128_global = self.getVggLoss(up_256, Cover)
             loss_R128_local = self.mse_loss(up_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
