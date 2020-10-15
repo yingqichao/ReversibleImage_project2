@@ -111,8 +111,8 @@ class ReversibleImageNetwork_hanson:
             # Cover_128 = self.downsample256_128(Cover).detach()
 
             Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.5 + 0.5 * self.roundCount), \
-                                               self.config.crop_size * (0.5 + 0.5 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.7 + 0.3 * self.roundCount), \
+                                               self.config.crop_size * (0.7 + 0.3 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,stage=256)
