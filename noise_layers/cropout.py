@@ -50,7 +50,7 @@ class Cropout(nn.Module):
 
         # 生成label：被修改区域对应的8*8小块赋值为1, height/width
 
-        print("Attacked Ratio: {0}, Max Crop Size: {1}".format(sum_attacked,max_size))
+        print("                                     Attacked Ratio: {0}, Max Crop Size: {1}".format(sum_attacked,max_size))
         tampered_image = embedded_image * (1-cropout_mask) + cover_image * cropout_mask
 
 

@@ -140,7 +140,7 @@ class ReversibleImageNetwork_qichao:
                 d_on_encoded = self.discriminator_HiddenRecovery(self.crop_layer(Recovered.detach()))
                 d_loss_on_recovery += self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
             d_loss_on_recovery.backward()
-            print("-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B,d_loss_on_recovery))
+            # print("-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B,d_loss_on_recovery))
             self.optimizer_discrim_HiddenRecovery.step()
 
             """Losses"""
@@ -152,7 +152,7 @@ class ReversibleImageNetwork_qichao:
             d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
             g_loss_adv_recovery, loss_R256_global = 0, 0
-            report_str, max_patch_vgg_loss = '', 0
+            report_str, max_patch_vgg_loss = '                                     ', 0
             for i in range(8):
                 crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
                 Recovered_portion = self.crop_layer(Recovered, shape=crop_shape)

@@ -93,8 +93,8 @@ class ReversibleImageNetwork_hanson:
         self.revert_network.train()
         self.discriminator_CoverHidden.train()
         self.discriminator_HiddenRecovery.train()
-        self.alpha -= 1/(20*10240)
-        self.roundCount += 1/(50*10240)
+        self.alpha -= 1/(5*102400/4)
+        self.roundCount += 1/(5*102400/4)
         if self.alpha < 0:
             self.alpha = 0
 
@@ -109,8 +109,8 @@ class ReversibleImageNetwork_hanson:
             Marked = self.preprocessing_network(Cover)
             # Cover_128 = self.downsample256_128(Cover).detach()
             Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.7 + 0.5 * self.roundCount), \
-                                               self.config.crop_size * (0.7 + 0.5 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.5 + 0.5 * self.roundCount), \
+                                               self.config.crop_size * (0.5 + 0.5 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,stage=256)
@@ -140,8 +140,8 @@ class ReversibleImageNetwork_hanson:
                 d_on_encoded = self.discriminator_HiddenRecovery(self.crop_layer(Recovered.detach()))
                 d_loss_on_recovery += self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
             d_loss_on_recovery.backward()
-            print(
-                "-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B, d_loss_on_recovery))
+            # print(
+            #     "-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B, d_loss_on_recovery))
             self.optimizer_discrim_HiddenRecovery.step()
 
             """Losses"""
@@ -159,7 +159,7 @@ class ReversibleImageNetwork_hanson:
             d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
             g_loss_adv_recovery, loss_R256_global = 0, 0
-            report_str, max_patch_vgg_loss = '', 0
+            report_str, max_patch_vgg_loss = '                                     ', 0
             for i in range(8):
                 crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
                 Recovered_portion = self.crop_layer(Recovered, shape=crop_shape)
@@ -172,6 +172,7 @@ class ReversibleImageNetwork_hanson:
                 report_str += "Patch {0:.6f} ".format(patch_vggLoss)
             loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
             loss_R256 = (loss_R256_local + loss_R256_global) / 2
+            print("Loss on 256: Global {0:.6f} Local {1:.6f}".format(loss_R256_global, loss_R256_local))
             loss_enc_dec = self.config.hyper_recovery * loss_R256 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
             loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator + g_loss_adv_recovery * self.config.hyper_discriminator
             loss_enc_dec.backward()
@@ -180,6 +181,7 @@ class ReversibleImageNetwork_hanson:
             print(
                 "Curr alpha: {0:.6f}, (Total) {1:.6f}, global: {2:.6f}, local: {4:.6f} (R64) Overall Loss {3:.6f}"
                 .format(self.alpha, loss_R256, loss_R256_global, loss_R128_global,loss_R256_local))
+            print(report_str)
 
         losses = {
             'loss_sum': loss_enc_dec.item(),
