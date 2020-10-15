@@ -26,16 +26,26 @@ def denormalize(image, std, mean):
 def denormalize_batch(image, std, mean):
     ''' Denormalizes a tensor of images.'''
 
-    for t in range(image.shape[1]):
-        image[:, t, :, :] = (image[:, t, :, :] * std[t]) + mean[t]
-    return image
+    image_denorm = torch.empty_like(image)
+    image_denorm[:, 0, :, :] = (image[:, 0, :, :].clone() * std[0]) + mean[0]
+    image_denorm[:, 1, :, :] = (image[:, 1, :, :].clone() * std[1]) + mean[1]
+    image_denorm[:, 2, :, :] = (image[:, 2, :, :].clone() * std[2]) + mean[2]
+
+    # for t in range(image.shape[1]):
+    #     image[:, t, :, :] = (image[:, t, :, :] * std[t]) + mean[t]
+    return image_denorm
 
 def normalize_batch(image, std, mean):
     ''' normalize a tensor of images.'''
 
-    for t in range(image.shape[1]):
-        image[:, t, :, :] = (image[:, t, :, :]-mean[t]) / std[t]
-    return image
+    image_norm = torch.empty_like(image)
+    image_norm[:, 0, :, :] = (image[:, 0, :, :].clone()-mean[0]) / std[0]
+    image_norm[:, 1, :, :] = (image[:, 1, :, :].clone()-mean[1]) / std[1]
+    image_norm[:, 2, :, :] = (image[:, 2, :, :].clone()-mean[2]) / std[2]
+
+    # for t in range(image.shape[1]):
+    #     image[:, t, :, :] = (image[:, t, :, :]-mean[t]) / std[t]
+    return image_norm
 
 def imshow(input_img, text, std, mean):
     '''Prints out an image given in tensor format.'''

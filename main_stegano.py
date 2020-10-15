@@ -175,7 +175,7 @@ if __name__ =='__main__':
                                 losses['loss_discriminator_enc'], losses['loss_discriminator_recovery'])
 
                     print(str)
-                if idx % 128 == 127:
+                if idx % 16 == 15:
                     for i in range(x_recover.shape[0]):
                         # util.save_images(p7_final[i].cpu(),
                         #                  'epoch-{0}-recovery-batch-{1}-{2}_after7.png'.format(epoch, idx, i),

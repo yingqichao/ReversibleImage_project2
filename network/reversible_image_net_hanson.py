@@ -108,7 +108,6 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_HiddenRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
             # Cover_128 = self.downsample256_128(Cover).detach()
-
             Attacked = self.jpeg_layer(Marked)
             portion_attack, portion_maxPatch = self.config.attack_portion * (0.7 + 0.5 * self.roundCount), \
                                                self.config.crop_size * (0.7 + 0.5 * self.roundCount)
@@ -288,12 +287,10 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Saved: " + path + '_revert_network.pkl')
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
-        # torch.save(self.hiding_network.state_dict(), path + '_hiding_network.pkl')
-        # print("Successfully Saved: " + path + '_hiding_network.pkl')
-        # torch.save(self.reveal_network.state_dict(), path + '_reveal_network.pkl')
-        # print("Successfully Saved: " + path + '_reveal_network.pkl')
-        # torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
-        # print("Successfully Saved: " + path + '_discriminator_network.pkl')
+        torch.save(self.discriminator_HiddenRecovery, path + '_discriminator_HiddenRecovery.pkl')
+        print("Successfully Saved: " + path + '_discriminator_HiddenRecovery.pkl')
+        torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pkl')
+        print("Successfully Saved: " + path + '_discriminator_CoverHidden.pkl')
 
     def save_model(self,path):
         torch.save(self.revert_network, path + '_revert_network.pth')
