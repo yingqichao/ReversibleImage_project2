@@ -82,18 +82,21 @@ class PrepStegano(nn.Module):
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
 
+        # self.upsample0 = nn.Sequential(
+        #     # SingleConv(512, out_channels=64, kernel_size=1, stride=1, dilation=1, padding=0),
+        #     SingleConv(320, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
+        #     SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=4, padding=8),
+        #     SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
+        #     SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
+        # )
+
         self.finalH1 = nn.Sequential(
             SingleConv(576, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
             SingleConv(64, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
             nn.Conv2d(64, 3, kernel_size=1, padding=0),
             # nn.Tanh()
         )
-        # self.finalH2 = nn.Sequential(
-        #     SingleConv(67, out_channels=32, kernel_size=3, stride=1, dilation=1, padding=1),
-        #     # SingleConv(32, out_channels=32, kernel_size=3, stride=1, dilation=1, padding=1),
-        #     nn.Conv2d(32, 3, kernel_size=1, padding=0),
-        #     nn.Tanh()
-        # )
+
 
     def forward(self, p):
         # Features with Kernel Size 7
@@ -115,5 +118,5 @@ class PrepStegano(nn.Module):
         up1 = self.upsample1(up2_cat)
         up1_cat = torch.cat((down8, down7, down6, down5, down4, up4, up3, up2, up1), 1)
         up0 = self.finalH1(up1_cat)
-        out = p + up0
-        return out
+        # out = p + up0
+        return up0

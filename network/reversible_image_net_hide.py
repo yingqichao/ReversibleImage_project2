@@ -110,6 +110,7 @@ class ReversibleImageNetwork_qichao:
             Marked = self.preprocessing_network(Cover)
             # Gauss = self.gaussian(Marked)
             Attacked = self.jpeg_layer(Marked) # 0.5*Marked+0.5*self.jpeg_layer(Marked)
+
             portion_attack, portion_maxPatch = self.config.attack_portion * (0.5 + 0.5 * self.roundCount),\
                                                self.config.crop_size * (0.5 + 0.5 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
@@ -142,7 +143,6 @@ class ReversibleImageNetwork_qichao:
             d_loss_on_recovery.backward()
             # print("-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B,d_loss_on_recovery))
             self.optimizer_discrim_HiddenRecovery.step()
-
             """Losses"""
             loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask)/portion_attack * 100
 
@@ -167,9 +167,12 @@ class ReversibleImageNetwork_qichao:
             loss_R256 = (loss_R256_local + loss_R256_global) / 2
             loss_enc_dec = self.config.hyper_recovery * loss_R256 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
             loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator + g_loss_adv_recovery * self.config.hyper_discriminator
+            print("Loss backward Begin")
             loss_enc_dec.backward()
+            print("Loss backward End")
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
+
             print(
                 "Cropout Local Loss {0:.6f}, Patch Loss {1:.6f}, Total Loss {2:.6f}"
                 .format(loss_R256_local,loss_R256_global, loss_R256))
