@@ -81,12 +81,11 @@ class Prep_pureUnet(nn.Module):
         )
 
         self.finalH1 = nn.Sequential(
-            SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1),
-            nn.Conv2d(64, 3, kernel_size=1, padding=0),
-            # nn.Tanh()
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            nn.Tanh()
         )
-        # self.finalH2 = nn.Sequential(
-        #     nn.Conv2d(6, 3, kernel_size=1, padding=0))
+        self.finalH2 = nn.Sequential(
+            nn.Conv2d(6, 3, kernel_size=1, padding=0))
 
     def forward(self, p):
         # Features with Kernel Size 7
@@ -115,7 +114,7 @@ class Prep_pureUnet(nn.Module):
         up2_cat = torch.cat((down7, up2), 1)
         up1 = self.upsample1_3(up2_cat)
         up1_cat = torch.cat((down8, up1), 1)
-        out = self.finalH1(up1_cat)
-        # out_cat = torch.cat((up0, p), 1)
-        # out = self.finalH2(out_cat)
+        up0 = self.finalH1(up1_cat)
+        out_cat = torch.cat((up0, p), 1)
+        out = self.finalH2(out_cat)
         return out

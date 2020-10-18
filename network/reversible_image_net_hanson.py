@@ -4,7 +4,7 @@ import torch.nn as nn
 
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from decoder.revert_1 import Revert
+from decoder.revert import Revert
 from discriminator.discriminator import Discriminator
 from encoder.prep_unet import PrepNetwork_Unet
 from loss.vgg_loss import VGGLoss
@@ -13,15 +13,15 @@ from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.crop import Crop
 from noise_layers.jpeg_compression import JpegCompression
-from encoder.prep_pureUnet_1 import Prep_pureUnet
+from encoder.prep_pureUnet import Prep_pureUnet
 from noise_layers.DiffJPEG import DiffJPEG
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):
         super(ReversibleImageNetwork_hanson, self).__init__()
         """ Settings """
-        self.alpha = 1.0
-        self.roundCount = 0.0
+        self.alpha = 0.0
+        self.roundCount = 1.0
         self.config = config
         self.device = self.config.device
         self.username = username
@@ -71,9 +71,11 @@ class ReversibleImageNetwork_hanson:
         self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
         """DownSampler"""
         self.downsample256_64 = PureUpsampling(scale=64 / 256).to(self.device)
-        self.downsample256_32 = PureUpsampling(scale=32 / 256).to(self.device)
+        self.downsample256_128 = PureUpsampling(scale=128 / 256).to(self.device)
         """Upsample"""
-        # self.upsample64_256 = PureUpsampling(scale=256 / 64).to(self.device)
+        self.upsample64_256 = PureUpsampling(scale=256 / 64).to(self.device)
+        self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
+
         self.UpsampleBy2 = PureUpsampling(scale=2)
         self.DownsampleBy2 = PureUpsampling(scale=1/2)
 
@@ -114,7 +116,7 @@ class ReversibleImageNetwork_hanson:
                                                self.config.crop_size * (0.75 + 0.25 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
-            up_256, out_256 = self.revert_network(Cropped_out,stage=64) #up_256
+            up_256, out_256 = self.revert_network(Cropped_out,stage=128) #up_256
             # Cover_downsample = self.downsample256_128(Cover)
             Recovered = up_256 * self.alpha + out_256 * (1 - self.alpha)
 
@@ -157,10 +159,10 @@ class ReversibleImageNetwork_hanson:
             """Losses"""
             ## Local and Global Loss
             # loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            loss_R256_global = self.getVggLoss(Recovered, self.downsample256_32(Cover))
-            loss_R256_local = self.mse_loss(Recovered, self.downsample256_32(Cover)) * 100 # Temp
-            loss_R128_global = self.getVggLoss(up_256, self.downsample256_32(Cover))
-            loss_R128_local = self.mse_loss(up_256, self.downsample256_32(Cover)) * 100
+            loss_R256_global = self.getVggLoss(Recovered, self.downsample256_128(Cover))
+            loss_R256_local = self.mse_loss(self.upsample128_256(Recovered)*cropout_mask, Cover*cropout_mask)/portion_attack * 100 # Temp
+            loss_R128_global = self.getVggLoss(self.DownsampleBy2(up_256), self.downsample256_64(Cover))
+            loss_R128_local = self.mse_loss(self.upsample128_256(up_256)*cropout_mask, Cover*cropout_mask)/portion_attack * 100
             print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Current alpha: {2:.6f}"
                   .format(loss_R128_global,loss_R128_local,self.alpha))
 
@@ -337,8 +339,10 @@ class ReversibleImageNetwork_hanson:
         # self.discriminator = torch.load(path + '_discriminator_network.pth')
         # print("Successfully Loaded: " + path + '_discriminator_network.pth')
         self.preprocessing_network = torch.load(path + '_prep_network.pth')
+        print(self.preprocessing_network)
         print("Successfully Loaded: " + path + '_prep_network.pth')
         self.revert_network = torch.load(path + '_revert_network.pth')
+        print(self.revert_network)
         print("Successfully Loaded: " + path + '_revert_network.pth')
         self.discriminator_HiddenRecovery = torch.load(path + '_discriminator_HiddenRecovery.pth')
         print("Successfully Loaded: " + path + '_discriminator_HiddenRecovery.pth')
