@@ -26,35 +26,42 @@ class ReversibleImageNetwork_qichao:
         self.alpha = 0.0
         self.roundCount = 0.0
         self.config = config
-        self.device = self.config.device
+        #self.device = self.config.device
         self.username = username
         """ Generator Network"""
-        #self.pretrain_net = Pretrain_deepsteg(config=config).to(self.device)
-        # self.encoder_decoder = Net(config=config).to(self.device)
-        self.preprocessing_network = PrepStegano(config=config).to(self.device)
-        # self.hiding_network = HidingNetwork().to(self.device)
-        # self.reveal_network = RevealNetwork().to(self.device)
+        #self.pretrain_net = Pretrain_deepsteg(config=config).cuda()
+        # self.encoder_decoder = Net(config=config).cuda()
+        self.preprocessing_network = PrepStegano(config=config).cuda()
+        if torch.cuda.device_count()>1:
+            self.preprocessing_network = torch.nn.DataParallel(self.preprocessing_network)
+        # self.hiding_network = HidingNetwork().cuda()
+        # self.reveal_network = RevealNetwork().cuda()
         """ Recovery Network """
-        # self.revert_network = RevertNew(input_channel=3, config=config).to(self.device)
-        self.revert_network = RevertStegano(config=config).to(self.device)
+        # self.revert_network = RevertNew(input_channel=3, config=config).cuda()
+        self.revert_network = RevertStegano(config=config).cuda()
+        if torch.cuda.device_count()>1:
+            self.revert_network = torch.nn.DataParallel(self.revert_network)
         """Localize Network"""
         # if self.username=="qichao":
-        #     self.localizer = LocalizeNetwork(config).to(self.device)
+        #     self.localizer = LocalizeNetwork(config).cuda()
         # else:
-        #     self.localizer = LocalizeNetwork_noPool(config).to(self.device)
+        #     self.localizer = LocalizeNetwork_noPool(config).cuda()
         """Discriminator"""
-        self.discriminator_CoverHidden = Discriminator(config).to(self.device)
-        self.discriminator_HiddenRecovery = Discriminator(config).to(self.device)
+        self.discriminator_CoverHidden = Discriminator(config).cuda()
+        if torch.cuda.device_count()>1:
+            self.discriminator_CoverHidden = torch.nn.DataParallel(self.discriminator_CoverHidden)
+        self.discriminator_HiddenRecovery = Discriminator(config).cuda()
+        if torch.cuda.device_count()>1:
+            self.discriminator_HiddenRecovery = torch.nn.DataParallel(self.discriminator_HiddenRecovery)
         self.cover_label = 1
         self.encoded_label = 0
         """Vgg"""
 
-        self.vgg_loss = VGGLoss(3, 1, False)
-        self.vgg_loss.to(self.device)
+        self.vgg_loss = VGGLoss(3, 1, False).cuda()
 
         """Loss"""
-        self.bce_with_logits_loss = nn.BCEWithLogitsLoss().to(self.device)
-        self.mse_loss = nn.MSELoss().to(self.device)
+        self.bce_with_logits_loss = nn.BCEWithLogitsLoss().cuda()
+        self.mse_loss = nn.MSELoss().cuda()
 
         """Optimizer"""
         # self.optimizer_hiding_network = torch.optim.Adam(self.hiding_network.parameters())
@@ -65,16 +72,16 @@ class ReversibleImageNetwork_qichao:
         self.optimizer_discrim_HiddenRecovery = torch.optim.Adam(self.discriminator_HiddenRecovery.parameters())
 
         """Attack Layers"""
-        self.cropout_layer = Cropout(config).to(self.device)
-        self.jpeg_layer = DiffJPEG(224, 224, differentiable=True, quality=80).to(self.device)
-        self.crop_layer = Crop((0.2,0.5),(0.2,0.5)).to(self.device)
-        # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
-        # self.gaussian = Gaussian(config).to(self.device)
-        # self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
+        self.cropout_layer = Cropout(config).cuda()
+        self.jpeg_layer = DiffJPEG(256, 256, differentiable=True, quality=80).cuda()
+        self.crop_layer = Crop((0.2,0.5),(0.2,0.5)).cuda()
+        # self.resize_layer = Resize(config, (0.5, 0.7)).cuda()
+        # self.gaussian = Gaussian(config).cuda()
+        # self.dropout_layer = Dropout(config,(0.4,0.6)).cuda()
         """DownSampler"""
-        # self.downsample256_128 = PureUpsampling(scale=128/ 256).to(self.device)
+        # self.downsample256_128 = PureUpsampling(scale=128/ 256).cuda()
         """Upsample"""
-        # self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
+        # self.upsample128_256 = PureUpsampling(scale=256 / 128).cuda()
 
     def getVggLoss(self, marked, cover):
         vgg_on_cov = self.vgg_loss(cover)
@@ -119,9 +126,9 @@ class ReversibleImageNetwork_qichao:
             Recovered = self.revert_network(Cropped_out, cropout_mask)
 
             """ Discriminate """
-            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
-            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
-            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
+            d_target_label_cover = torch.full((batch_size, 1), self.cover_label,dtype=torch.float32).cuda()
+            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label,dtype=torch.float32).cuda()
+            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label,dtype=torch.float32).cuda()
             """Discriminator A"""
             d_on_cover = self.discriminator_CoverHidden(Cover)
             d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)

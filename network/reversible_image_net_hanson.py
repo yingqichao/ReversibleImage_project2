@@ -4,7 +4,7 @@ import torch.nn as nn
 
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from decoder.revert import Revert
+from decoder.revert_1 import Revert
 from discriminator.discriminator import Discriminator
 from encoder.prep_unet import PrepNetwork_Unet
 from loss.vgg_loss import VGGLoss
@@ -13,7 +13,7 @@ from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.crop import Crop
 from noise_layers.jpeg_compression import JpegCompression
-from encoder.prep_pureUnet import Prep_pureUnet
+from encoder.prep_pureUnet_1 import Prep_pureUnet
 from noise_layers.DiffJPEG import DiffJPEG
 
 class ReversibleImageNetwork_hanson:
@@ -21,7 +21,7 @@ class ReversibleImageNetwork_hanson:
         super(ReversibleImageNetwork_hanson, self).__init__()
         """ Settings """
         self.alpha = 1.0
-        self.roundCount = 0
+        self.roundCount = 0.0
         self.config = config
         self.device = self.config.device
         self.username = username
@@ -69,9 +69,9 @@ class ReversibleImageNetwork_hanson:
         # self.gaussian = Gaussian(config).to(self.device)
         self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
         """DownSampler"""
-        self.downsample256_128 = PureUpsampling(scale=128 / 256).to(self.device)
+        self.downsample256_32 = PureUpsampling(scale=64 / 256).to(self.device)
         """Upsample"""
-        self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
+        self.upsample32_256 = PureUpsampling(scale=256 / 64).to(self.device)
 
     def getVggLoss(self, marked, cover):
         vgg_on_cov = self.vgg_loss(cover)
@@ -88,32 +88,29 @@ class ReversibleImageNetwork_hanson:
         """
         batch_size = Cover.shape[0]
         self.preprocessing_network.train()
-        # self.hiding_network.train()
-        # self.reveal_network.train()
         self.revert_network.train()
         self.discriminator_CoverHidden.train()
         self.discriminator_HiddenRecovery.train()
-        self.alpha -= 1/(5*102400/4)
-        self.roundCount += 1/(5*102400/4)
+        self.alpha -= 1/(5*10240)
+        self.roundCount += 1/(5*10240)
         if self.alpha < 0:
             self.alpha = 0
+        if self.roundCount > 1:
+            self.roundCount = 1
 
         with torch.enable_grad():
             """ Run, Train the discriminator"""
             self.optimizer_preprocessing_network.zero_grad()
-            # self.optimizer_hiding_network.zero_grad()
-            # self.optimizer_reveal_network.zero_grad()
             self.optimizer_revert_network.zero_grad()
             self.optimizer_discrim_CoverHidden.zero_grad()
             self.optimizer_discrim_HiddenRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
-            # Cover_128 = self.downsample256_128(Cover).detach()
             Attacked = self.jpeg_layer(Marked)
             portion_attack, portion_maxPatch = self.config.attack_portion * (0.5 + 0.5 * self.roundCount), \
-                                               self.config.crop_size * (0.5 + 0.5 * self.roundCount)
+                                               self.config.crop_size * (0.75 + 0.25 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
-            up_256, out_256 = self.revert_network(Cropped_out,stage=256)
+            up_256, out_256 = self.revert_network(Cropped_out,stage=64) #up_256
             # Cover_downsample = self.downsample256_128(Cover)
             Recovered = up_256 * self.alpha + out_256 * (1 - self.alpha)
 
@@ -130,66 +127,80 @@ class ReversibleImageNetwork_hanson:
             d_loss_on_encoded.backward()
             self.optimizer_discrim_CoverHidden.step()
             """Discriminator B"""
-            d_loss_on_cover_B = 0
-            for i in range(8):
-                d_on_cover = self.discriminator_HiddenRecovery(self.crop_layer(Cover))
-                d_loss_on_cover_B += self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
-            d_loss_on_cover_B.backward()
-            d_loss_on_recovery = 0
-            for i in range(5):
-                d_on_encoded = self.discriminator_HiddenRecovery(self.crop_layer(Recovered.detach()))
-                d_loss_on_recovery += self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
-            d_loss_on_recovery.backward()
+            ## Globally
+            d_on_cover = self.discriminator_HiddenRecovery(Cover)
+            d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
+            d_loss_on_cover.backward()
+            d_on_encoded = self.discriminator_HiddenRecovery(Recovered.detach())
+            d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
+            d_loss_on_encoded.backward()
+            self.optimizer_discrim_HiddenRecovery.step()
+            ## Locally
+            # d_loss_on_cover_B = 0
+            # for i in range(8):
+            #     d_on_cover = self.discriminator_HiddenRecovery(self.crop_layer(Cover))
+            #     d_loss_on_cover_B += self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
+            # d_loss_on_cover_B.backward()
+            # d_loss_on_recovery = 0
+            # for i in range(8):
+            #     d_on_encoded = self.discriminator_HiddenRecovery(self.crop_layer(Recovered.detach()))
+            #     d_loss_on_recovery += self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
+            # d_loss_on_recovery.backward()
             # print(
             #     "-- Adversary B on Cover:{0:.6f},on Recovery:{1:.6f} --".format(d_loss_on_cover_B, d_loss_on_recovery))
-            self.optimizer_discrim_HiddenRecovery.step()
+            # self.optimizer_discrim_HiddenRecovery.step()
 
             """Losses"""
+            ## Local and Global Loss
+            # loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
+            loss_R256_global = self.getVggLoss(Recovered, self.downsample256_32(Cover))
+            loss_R256_local = self.mse_loss(Recovered, self.downsample256_32(Cover)) * 100 # Temp
+            loss_R128_global = self.getVggLoss(up_256, self.downsample256_32(Cover))
+            loss_R128_local = self.mse_loss(up_256, self.downsample256_32(Cover)) * 100
+            print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Current alpha: {2:.6f}"
+                  .format(loss_R128_global,loss_R128_local,self.alpha))
 
-            loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            loss_R128_global = self.getVggLoss(up_256, Cover)
-            loss_R128_local = self.mse_loss(up_256 * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            print("Loss on 128: Global {0:.6f} Local {1:.6f}".format(loss_R128_global,loss_R128_local))
-            # loss_R256_global = self.getVggLoss(out_128, Cover_downsample)
-            # out_128_upsample = self.upsample128_256(out_128)
-            # loss_R256_local = self.mse_loss(out_128_upsample * cropout_mask, Cover * cropout_mask) / 0.2 * 100
-            # loss_R256 = loss_R128_global * self.alpha + (loss_R256_global * (1 - self.alpha) + loss_R256_local * (1 - self.alpha))/2
             loss_cover = self.getVggLoss(Marked, Cover)
             """Adversary Loss"""
             d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
             g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
-            g_loss_adv_recovery, loss_R256_global = 0, 0
-            report_str, max_patch_vgg_loss = '                                     ', 0
-            for i in range(8):
-                crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
-                Recovered_portion = self.crop_layer(Recovered, shape=crop_shape)
-                Cover_portion = self.crop_layer(Cover, shape=crop_shape)
-                d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered_portion)
-                patch_vggLoss = self.getVggLoss(Recovered_portion, Cover_portion)
-                max_patch_vgg_loss = max(patch_vggLoss.item(), max_patch_vgg_loss)
-                loss_R256_global += patch_vggLoss
-                g_loss_adv_recovery += self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
-                report_str += "Patch {0:.6f} ".format(patch_vggLoss)
-            loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
-            loss_R256 = (loss_R256_local + loss_R256_global) / 2
-            print("Loss on 256: Global {0:.6f} Local {1:.6f}".format(loss_R256_global, loss_R256_local))
+            ## Global
+            d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered)
+            g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
+            ## Local
+            # g_loss_adv_recovery, loss_R256_global = 0, 0
+            # report_str, max_patch_vgg_loss = '                                     ', 0
+            # for i in range(8):
+            #     crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
+            #     Recovered_portion = self.crop_layer(Recovered, shape=crop_shape)
+            #     Cover_portion = self.crop_layer(Cover, shape=crop_shape)
+            #     d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered_portion)
+            #     patch_vggLoss = self.getVggLoss(Recovered_portion, Cover_portion)
+            #     max_patch_vgg_loss = max(patch_vggLoss.item(), max_patch_vgg_loss)
+            #     loss_R256_global += patch_vggLoss
+            #     g_loss_adv_recovery += self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
+            #     report_str += "Patch {0:.6f} ".format(patch_vggLoss)
+            # loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
+
+            loss_R256 = (loss_R256_global+loss_R256_local)/2 # (loss_R256_local + loss_R256_global) / 2
+            print("Loss on 256: Global {0:.6f} Local {1:.6f} Sum {2:.6f}".format(loss_R256_global, loss_R256_local, loss_R256))
             loss_enc_dec = self.config.hyper_recovery * loss_R256 + loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
             loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator + g_loss_adv_recovery * self.config.hyper_discriminator
             loss_enc_dec.backward()
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
-            print(
-                "Curr alpha: {0:.6f}, (Total) {1:.6f}, global: {2:.6f}, local: {4:.6f} (R64) Overall Loss {3:.6f}"
-                .format(self.alpha, loss_R256, loss_R256_global, loss_R128_global,loss_R256_local))
-            print(report_str)
+            # print(
+            #     "Curr alpha: {0:.6f}, (Total) {1:.6f}, global: {2:.6f}, local: {4:.6f} (R64) Overall Loss {3:.6f}"
+            #     .format(self.alpha, loss_R256, loss_R256_global, loss_R128_global,loss_R256_local))
+            # print(report_str)
 
         losses = {
             'loss_sum': loss_enc_dec.item(),
             'loss_localization': 0, #loss_localization.item(),
             'loss_cover': loss_cover.item(),
             'loss_recover': loss_R256.item(),
-            'loss_discriminator_enc': d_loss_on_encoded.item(),
-            'loss_discriminator_recovery': d_loss_on_recovery.item()
+            'loss_discriminator_enc': g_loss_adv_enc.item(),
+            'loss_discriminator_recovery': g_loss_adv_recovery.item()
         }
 
         return losses, (Marked, Recovered, Cropped_out)

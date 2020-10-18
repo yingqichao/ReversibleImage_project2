@@ -19,8 +19,8 @@ if __name__ =='__main__':
     isSelfRecovery = True
     skipTraining = config.skipTraining
 
-    device = config.device
-    print(device)
+    # device = config.device
+    # print(device)
     # Hyper Parameters
     num_epochs = config.num_epochs
     train_batch_size = config.train_batch_size
@@ -125,7 +125,7 @@ if __name__ =='__main__':
             # train
             for idx, train_batch in enumerate(specific_loader):
                 data, _ = train_batch
-                train_covers = data.to(device)
+                train_covers = data.cuda()
                 losses, crop_Predicted = net.train_on_batch(train_covers)
                 # losses
                 train_loss_localization.append(losses['loss_localization'])
@@ -158,7 +158,7 @@ if __name__ =='__main__':
             # train
             for idx, train_batch in enumerate(train_loader):
                 data, _ = train_batch
-                train_covers = data.to(device)
+                train_covers = data.cuda()
                 losses, output = net.train_on_batch(train_covers)
                 x_hidden, x_recover, x_attacked = output
                 # losses
@@ -242,8 +242,8 @@ if __name__ =='__main__':
         datasets.ImageFolder(
             TRAIN_PATH,
             transforms.Compose([
-                transforms.Scale(256),
-                transforms.RandomCrop(224),
+                transforms.Resize(256),
+                transforms.RandomCrop(256),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=config.mean,
                                      std=config.std),
