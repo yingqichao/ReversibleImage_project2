@@ -42,42 +42,42 @@ class Prep_pureUnet(nn.Module):
         # 2
         self.upsample8 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 4
         self.upsample7 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 8
         self.upsample6 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 16
         self.upsample5 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 32
         self.upsample4 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(1024, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 64
         self.upsample3 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(512, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(512, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 128
         self.upsample2 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(256, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(256, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 256
         self.upsample1 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(128, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         self.UpsampleBy2 = PureUpsampling(scale=2)
 

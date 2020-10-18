@@ -49,7 +49,7 @@ class PrepStegano(nn.Module):
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
-        # 32
+        # 8
         self.upsample4 = nn.Sequential(
             # SingleConv(320, out_channels=64, kernel_size=1, stride=1, dilation=1, padding=0),
             SingleConv(320, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
@@ -57,7 +57,7 @@ class PrepStegano(nn.Module):
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
-        # 64
+        # 4
         self.upsample3 = nn.Sequential(
             # SingleConv(384, out_channels=64, kernel_size=1, stride=1, dilation=1, padding=0),
             SingleConv(384, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
@@ -65,7 +65,7 @@ class PrepStegano(nn.Module):
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
-        # 128
+        # 2
         self.upsample2 = nn.Sequential(
             # SingleConv(448, out_channels=64, kernel_size=1, stride=1, dilation=1, padding=0),
             SingleConv(448, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),
@@ -73,7 +73,7 @@ class PrepStegano(nn.Module):
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=8, padding=16),
             SingleConv(64, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
-        # 256
+        # 1
         self.upsample1 = nn.Sequential(
             # SingleConv(512, out_channels=64, kernel_size=1, stride=1, dilation=1, padding=0),
             SingleConv(512, out_channels=64, kernel_size=5, stride=1, dilation=2, padding=4),

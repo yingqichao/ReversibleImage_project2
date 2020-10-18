@@ -4,7 +4,7 @@ import torch.nn as nn
 
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from decoder.revert import Revert
+from decoder.revert_1 import Revert
 from discriminator.discriminator import Discriminator
 from encoder.prep_unet import PrepNetwork_Unet
 from loss.vgg_loss import VGGLoss
@@ -13,14 +13,14 @@ from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.crop import Crop
 from noise_layers.jpeg_compression import JpegCompression
-from encoder.prep_pureUnet import Prep_pureUnet
+from encoder.prep_pureUnet_1 import Prep_pureUnet
 from noise_layers.DiffJPEG import DiffJPEG
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):
         super(ReversibleImageNetwork_hanson, self).__init__()
         """ Settings """
-        self.alpha = 0.8
+        self.alpha = 1.0
         self.roundCount = 0.0
         self.config = config
         self.device = self.config.device
@@ -157,15 +157,14 @@ class ReversibleImageNetwork_hanson:
             """Losses"""
             ## Local and Global Loss
             # loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            loss_R256_global = self.getVggLoss(Recovered, self.downsample256_64(Cover))
-            loss_R256_local = self.mse_loss(Recovered, self.downsample256_64(Cover)) * 100 # Temp
-            loss_R128_global = self.getVggLoss(self.DownsampleBy2(up_256), self.downsample256_32(Cover))
-            loss_R128_local = self.mse_loss(self.DownsampleBy2(up_256), self.downsample256_32(Cover)) * 100
-            loss_R128 = (loss_R128_local+loss_R128_global)/2
+            loss_R256_global = self.getVggLoss(Recovered, self.downsample256_32(Cover))
+            loss_R256_local = self.mse_loss(Recovered, self.downsample256_32(Cover)) * 100 # Temp
+            loss_R128_global = self.getVggLoss(up_256, self.downsample256_32(Cover))
+            loss_R128_local = self.mse_loss(up_256, self.downsample256_32(Cover)) * 100
+            print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Current alpha: {2:.6f}"
+                  .format(loss_R128_global,loss_R128_local,self.alpha))
 
             self.optimizer_revert_network.step()
-            print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Sum {2:.6f} Current alpha: {3:.6f}"
-                  .format(loss_R128_global,loss_R128_local,loss_R128, self.alpha))
 
             loss_cover = self.getVggLoss(Marked, Cover)
             """Adversary Loss"""

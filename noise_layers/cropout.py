@@ -54,7 +54,7 @@ class Cropout(nn.Module):
         tampered_image = embedded_image * (1-cropout_mask) + cover_image * cropout_mask
 
 
-        cropout_label = cropout_mask[:,0,:,:]
+        cropout_label = cropout_mask[:,0,:,:].clone().detach()
         # cropout_label = cropout_label.unsqueeze(1)
         # numpy_conducted = cropout_mask.clone().detach().cpu().numpy()
         # numpy_groundtruth = cropout_label.data.clone().detach().cpu().numpy()
