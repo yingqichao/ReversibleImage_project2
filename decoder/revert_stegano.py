@@ -118,8 +118,8 @@ class RevertStegano(nn.Module):
         up1 = self.upsample1(up2_cat)
         up1_cat = torch.cat((down8, down7, down6, down5, down4, up4, up3, up2, up1), 1)
         up0 = self.finalH1(up1_cat)
-        # return p*(1-crop_mask) + up0*crop_mask
-        return up0
+        return p*(1-crop_mask) + up0*crop_mask
+        # return up0
 
         # out = p*(1-crop_mask) + up0*crop_mask
         # return out
