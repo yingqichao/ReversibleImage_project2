@@ -23,8 +23,8 @@ class ReversibleImageNetwork_qichao:
     def __init__(self, username, config=GlobalConfig()):
         super(ReversibleImageNetwork_qichao, self).__init__()
         """ Settings """
-        self.alpha = 0.8
-        self.roundCount = 0.2
+        self.alpha = 0.9
+        self.roundCount = 0.1
         self.config = config
         #self.device = self.config.device
         self.username = username
@@ -337,11 +337,12 @@ class ReversibleImageNetwork_qichao:
         print("Successfully Saved: " + path + '_revert_network.pkl')
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
-        # torch.save(self.hiding_network.state_dict(), path + '_hiding_network.pkl')
-        # print("Successfully Saved: " + path + '_hiding_network.pkl')
-        # torch.save(self.reveal_network.state_dict(), path + '_reveal_network.pkl')
-        # print("Successfully Saved: " + path + '_reveal_network.pkl')
-        # torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
+        torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pkl')
+        print("Successfully Saved: " + path + '_discriminator_patchHidden.pkl')
+        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pkl')
+        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pkl')
+
+    # torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
         # print("Successfully Saved: " + path + '_discriminator_network.pkl')
 
     def save_model(self,path):
@@ -349,10 +350,10 @@ class ReversibleImageNetwork_qichao:
         print("Successfully Saved: " + path + '_revert_network.pth')
         torch.save(self.preprocessing_network, path + '_prep_network.pth')
         print("Successfully Saved: " + path + '_prep_network.pth')
-        torch.save(self.discriminator_HiddenRecovery, path + '_discriminator_HiddenRecovery.pth')
-        print("Successfully Saved: " + path + '_discriminator_HiddenRecovery.pth')
-        torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pth')
-        print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth')
+        torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pth')
+        print("Successfully Saved: " + path + '_discriminator_patchHidden.pth')
+        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pth')
+        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth')
         # torch.save(self.discriminator, path + '_discriminator_network.pth')
         # print("Successfully Saved: " + path + '_discriminator_network.pth')
 
@@ -375,10 +376,10 @@ class ReversibleImageNetwork_qichao:
         print("Successfully Loaded: " + path + '_prep_network.pth')
         self.revert_network = torch.load(path + '_revert_network.pth')
         print("Successfully Loaded: " + path + '_revert_network.pth')
-        self.discriminator_HiddenRecovery = torch.load(path + '_discriminator_HiddenRecovery.pth')
-        print("Successfully Loaded: " + path + '_discriminator_HiddenRecovery.pth')
-        self.discriminator_CoverHidden = torch.load(path + '_discriminator_CoverHidden.pth')
-        print("Successfully Loaded: " + path + '_discriminator_CoverHidden.pth')
+        self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
+        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
+        self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
+        print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
 
 
     # def load_state_dict_pretrain(self, path):
