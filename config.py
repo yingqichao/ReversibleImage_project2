@@ -35,7 +35,7 @@ class GlobalConfig():
         else:
             self.hyper_cover = 1
             self.hyper_recovery = 2
-        self.hyper_discriminator = 0.1
+        self.hyper_discriminator = 1
         self.hyper_intermediate = 1
         self.hyper_mask = 5
 

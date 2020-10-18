@@ -77,13 +77,17 @@ class Revert(nn.Module):
             PureUpsampling(scale=2),
             SingleConv(256, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
-
-        self.finalH1 = nn.Sequential(
-            SingleConv(128, out_channels=3, kernel_size=3, stride=1, dilation=1, padding=1)
+        self.upsample0_3 = nn.Sequential(
+            # PureUpsampling(scale=2),
+            SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
+        # self.finalH1 = nn.Sequential(
+        #     SingleConv(64, out_channels=3, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
 
-        # self.finalH2 = nn.Sequential(
-        #     nn.Conv2d(6, 3, kernel_size=1, padding=0))
+        self.finalH2 = nn.Sequential(
+            nn.Conv2d(6, 3, kernel_size=1, padding=0),
+        )
 
         self.final32 = nn.Sequential(
             nn.Conv2d(512, 3, kernel_size=1, padding=0),
@@ -97,14 +101,17 @@ class Revert(nn.Module):
             nn.Conv2d(128, 3, kernel_size=1, padding=0),
             # nn.Tanh()
         )
-        # self.final256 = nn.Sequential(
-        #     nn.Conv2d(64, 3, kernel_size=1, padding=0),
-        #     nn.Tanh()
-        # )
+        self.final256 = nn.Sequential(
+            nn.Conv2d(64, 3, kernel_size=1, padding=0),
+            # nn.Tanh()
+        )
         self.upsample2 = PureUpsampling(scale=2)
+        self.down16 = PureUpsampling(scale=16/256)
+        self.down32 = PureUpsampling(scale=32/256)
+        self.down64 = PureUpsampling(scale=64 / 256)
+        self.down128 = PureUpsampling(scale=128 / 256)
 
-
-    def forward(self, ori_image, stage):
+    def forward(self, ori_image, crop_mask, stage):
         # 阶梯训练，仿照ProgressiveGAN
         down8 = self.downsample_8(ori_image)
         down7 = self.downsample_7(down8)
@@ -122,7 +129,9 @@ class Revert(nn.Module):
         up6 = self.upsample6_3(up7_cat)
         up6_cat = torch.cat((down3, up6), 1)
         up5 = self.upsample5_3(up6_cat)
+        mask_16 = self.down16(crop_mask).expand(-1,up5.shape[1],-1,-1)
         up5_cat = torch.cat((down4, up5), 1)
+        # up5_cat = torch.cat((up5*mask_16+down4*(1-mask_16), up5), 1)
 
         if stage >= 32:
             up4 = self.upsample4_3(up5_cat)
@@ -131,25 +140,33 @@ class Revert(nn.Module):
                 return out_32
         if stage >= 64:
             up_64 = self.upsample2(out_32)
+            mask_32 = self.down32(crop_mask).expand(-1, up4.shape[1], -1, -1)
             up4_cat = torch.cat((down5, up4), 1)
+            # up4_cat = torch.cat((up4*mask_32+down5*(1-mask_32), up4), 1)
             up3 = self.upsample3_3(up4_cat)
             out_64 = self.final64(up3)
             if stage==64:
                 return up_64, out_64
         if stage >= 128:
             up_128 = self.upsample2(out_64)
-            up3_cat = torch.cat((down6, up3), 1)
+            mask_64 = self.down64(crop_mask).expand(-1, up3.shape[1], -1, -1)
+            # up3_cat = torch.cat((down6, up3), 1)
+            up3_cat = torch.cat((up3*mask_64+down6*(1-mask_64), up3), 1)
             up2 = self.upsample2_3(up3_cat)
             out_128 = self.final128(up2)
             if stage == 128:
                 return up_128, out_128
         if stage >= 256:
             up_256 = self.upsample2(out_128)
-            up2_cat = torch.cat((down7, up2), 1)
+            mask_128 = self.down128(crop_mask).expand(-1, up2.shape[1], -1, -1)
+            # up2_cat = torch.cat((down7, up2), 1)
+            up2_cat = torch.cat((up2*mask_128+down7*(1-mask_128), up2), 1)
             up1 = self.upsample1_3(up2_cat)
-            up1_cat = torch.cat((down8, up1), 1)
-            up0 = self.finalH(up1_cat)
-            out_cat = torch.cat((up0, ori_image), 1)
+            # up1_cat = torch.cat((down8, up1), 1)
+            up1_cat = torch.cat((up1*crop_mask+down8*(1-crop_mask), up1), 1)
+            up0 = self.upsample0_3(up1_cat)
+            extracted = self.final256(up0)
+            out_cat = torch.cat((extracted*crop_mask+ori_image*(1-crop_mask), extracted), 1)
             out_256 = self.finalH2(out_cat)
             if stage == 256:
                 return up_256, out_256
