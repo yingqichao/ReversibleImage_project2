@@ -46,6 +46,7 @@ class GlobalConfig():
         self.VALID_PATH = './sample/valid_coco/'
         self.TRAIN_PATH = './sample/train_coco/'
         self.TEST_PATH = './sample/Test/'
+        self.HIDDEN_PATH = './sample/Test/'
         self.skipTraining = False
         # Discriminator
         self.discriminator_channels = 64

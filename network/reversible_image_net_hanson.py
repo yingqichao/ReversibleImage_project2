@@ -28,35 +28,43 @@ class ReversibleImageNetwork_hanson:
         self.device = self.config.device
         self.username = username
         """ Generator Network"""
-        #self.pretrain_net = Pretrain_deepsteg(config=config).to(self.device)
-        # self.encoder_decoder = Net(config=config).to(self.device)
-        self.preprocessing_network = Prep_pureUnet(config=config).to(self.device)
-        # self.hiding_network = HidingNetwork().to(self.device)
-        # self.reveal_network = RevealNetwork().to(self.device)
+        #self.pretrain_net = Pretrain_deepsteg(config=config).cuda()
+        # self.encoder_decoder = Net(config=config).cuda()
+        self.preprocessing_network = Prep_pureUnet(config=config).cuda()
+        if torch.cuda.device_count() > 1:
+            self.preprocessing_network = torch.nn.DataParallel(self.preprocessing_network)
+        # self.hiding_network = HidingNetwork().cuda()
+        # self.reveal_network = RevealNetwork().cuda()
         """ Recovery Network """
-        # self.revert_network = RevertNew(input_channel=3, config=config).to(self.device)
-        self.revert_network = Revert(config=config).to(self.device)
+        # self.revert_network = RevertNew(input_channel=3, config=config).cuda()
+        self.revert_network = Revert(config=config).cuda()
+        if torch.cuda.device_count() > 1:
+            self.revert_network = torch.nn.DataParallel(self.revert_network)
         """Localize Network"""
         # if self.username=="qichao":
-        #     self.localizer = LocalizeNetwork(config).to(self.device)
+        #     self.localizer = LocalizeNetwork(config).cuda()
         # else:
-        #     self.localizer = LocalizeNetwork_noPool(config).to(self.device)
+        #     self.localizer = LocalizeNetwork_noPool(config).cuda()
         """Discriminator"""
-        self.discriminator_CoverHidden = Discriminator(config).to(self.device)
-        self.discriminator_HiddenRecovery = Discriminator(config).to(self.device)
-        self.discriminator_patchHidden = NLayerDiscriminator().to(self.device)
-        self.discriminator_patchRecovery = NLayerDiscriminator().to(self.device)
+        # self.discriminator_CoverHidden = Discriminator(config).cuda()
+        # self.discriminator_HiddenRecovery = Discriminator(config).cuda()
+        self.discriminator_patchHidden = NLayerDiscriminator().cuda()
+        if torch.cuda.device_count() > 1:
+            self.discriminator_patchHidden = torch.nn.DataParallel(self.discriminator_patchHidden)
+        self.discriminator_patchRecovery = NLayerDiscriminator().cuda()
+        if torch.cuda.device_count() > 1:
+            self.discriminator_patchRecovery = torch.nn.DataParallel(self.discriminator_patchRecovery)
         self.cover_label = 1
         self.encoded_label = 0
         """Vgg"""
 
         self.vgg_loss = VGGLoss(3, 1, False)
-        self.vgg_loss.to(self.device)
+        self.vgg_loss.cuda()
 
         """Loss"""
-        self.bce_with_logits_loss = nn.BCEWithLogitsLoss().to(self.device)
-        self.mse_loss = nn.MSELoss().to(self.device)
-        self.criterionGAN = GANLoss().to(self.device)
+        self.bce_with_logits_loss = nn.BCEWithLogitsLoss().cuda()
+        self.mse_loss = nn.MSELoss().cuda()
+        self.criterionGAN = GANLoss().cuda()
         """Optimizer"""
         # self.optimizer_hiding_network = torch.optim.Adam(self.hiding_network.parameters())
         self.optimizer_preprocessing_network = torch.optim.Adam(self.preprocessing_network.parameters())
@@ -67,18 +75,18 @@ class ReversibleImageNetwork_hanson:
         self.optimizer_discrim_patchRecovery = torch.optim.Adam(self.discriminator_patchRecovery.parameters())
 
         """Attack Layers"""
-        self.cropout_layer = Cropout(config).to(self.device)
-        self.jpeg_layer = DiffJPEG(256, 256, differentiable=True, quality=80).to(self.device)
-        self.crop_layer = Crop((0.2, 0.5), (0.2, 0.5)).to(self.device)
-        # self.resize_layer = Resize(config, (0.5, 0.7)).to(self.device)
-        # self.gaussian = Gaussian(config).to(self.device)
-        self.dropout_layer = Dropout(config,(0.4,0.6)).to(self.device)
+        self.cropout_layer = Cropout(config).cuda()
+        self.jpeg_layer = DiffJPEG(256, 256, differentiable=True, quality=80).cuda()
+        self.crop_layer = Crop((0.2, 0.5), (0.2, 0.5)).cuda()
+        # self.resize_layer = Resize(config, (0.5, 0.7)).cuda()
+        # self.gaussian = Gaussian(config).cuda()
+        self.dropout_layer = Dropout(config,(0.4,0.6)).cuda()
         """DownSampler"""
-        self.downsample256_64 = PureUpsampling(scale=64 / 256).to(self.device)
-        self.downsample256_128 = PureUpsampling(scale=128 / 256).to(self.device)
+        self.downsample256_64 = PureUpsampling(scale=64 / 256).cuda()
+        self.downsample256_128 = PureUpsampling(scale=128 / 256).cuda()
         """Upsample"""
-        self.upsample64_256 = PureUpsampling(scale=256 / 64).to(self.device)
-        self.upsample128_256 = PureUpsampling(scale=256 / 128).to(self.device)
+        self.upsample64_256 = PureUpsampling(scale=256 / 64).cuda()
+        self.upsample128_256 = PureUpsampling(scale=256 / 128).cuda()
 
         self.UpsampleBy2 = PureUpsampling(scale=2)
         self.DownsampleBy2 = PureUpsampling(scale=1/2)
