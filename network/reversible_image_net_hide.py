@@ -376,10 +376,10 @@ class ReversibleImageNetwork_qichao:
         print("Successfully Loaded: " + path + '_prep_network.pth')
         self.revert_network = torch.load(path + '_revert_network.pth')
         print("Successfully Loaded: " + path + '_revert_network.pth')
-        self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
-        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
-        self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
-        print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
+        # self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
+        # print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
+        # self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
+        # print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
 
 
     # def load_state_dict_pretrain(self, path):
