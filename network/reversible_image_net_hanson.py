@@ -137,8 +137,8 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_patchRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
             Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.5 * self.roundCount), \
-                                               self.config.crop_size * (0.75 + 0.5 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.25 * self.roundCount), \
+                                               self.config.crop_size * (0.75 + 0.25 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,cropout_mask[:, 0, :, :].unsqueeze(1), stage=256) #up_256
