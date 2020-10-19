@@ -16,13 +16,13 @@ class Cropout(nn.Module):
         self.config = config
         self.device = config.device
 
-    def forward(self, embedded_image,require_attack=None,max_size=None,cover_image=None):
+    def forward(self, embedded_image,require_attack=None,max_size=None,Cover=None):
         if require_attack is None:
             require_attack = self.config.attack_portion
         if max_size is None:
             max_size = self.config.crop_size
-        if cover_image is None:
-            cover_image = torch.zeros_like(embedded_image)
+        # if cover_image is None:
+        cover_image = torch.zeros_like(embedded_image)
         assert embedded_image.shape == cover_image.shape
         sum_attacked = 0
         cropout_mask = torch.zeros_like(embedded_image, requires_grad=False)
@@ -53,11 +53,10 @@ class Cropout(nn.Module):
         print("                                     Attacked Ratio: {0}, Max Crop Size: {1}".format(sum_attacked,max_size))
         tampered_image = embedded_image * (1-cropout_mask) + cover_image * cropout_mask
 
-
-        cropout_label = cropout_mask[:,0,:,:].clone().detach()
+        CropWithCover = embedded_image * (1-cropout_mask) + Cover * cropout_mask
         # cropout_label = cropout_label.unsqueeze(1)
         # numpy_conducted = cropout_mask.clone().detach().cpu().numpy()
         # numpy_groundtruth = cropout_label.data.clone().detach().cpu().numpy()
 
-        return tampered_image, cropout_label, cropout_mask # cropout_label.to(self.device)
+        return tampered_image, CropWithCover, cropout_mask # cropout_label.to(self.device)
 

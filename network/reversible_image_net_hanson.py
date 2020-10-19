@@ -17,6 +17,7 @@ from encoder.prep_pureUnet import Prep_pureUnet
 from noise_layers.DiffJPEG import DiffJPEG
 from discriminator.GANloss import GANLoss
 from discriminator.NLayerDiscriminator import NLayerDiscriminator
+from localizer.local_new import Localize
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):
@@ -65,8 +66,13 @@ class ReversibleImageNetwork_hanson:
         self.bce_with_logits_loss = nn.BCEWithLogitsLoss().cuda()
         self.mse_loss = nn.MSELoss().cuda()
         self.criterionGAN = GANLoss().cuda()
+        """Localizer"""
+        self.localizer = Localize().cuda()
+        if torch.cuda.device_count() > 1:
+            self.localizer = torch.nn.DataParallel(self.localizer)
+
         """Optimizer"""
-        # self.optimizer_hiding_network = torch.optim.Adam(self.hiding_network.parameters())
+        self.optimizer_localizer = torch.optim.Adam(self.localizer.parameters())
         self.optimizer_preprocessing_network = torch.optim.Adam(self.preprocessing_network.parameters())
         self.optimizer_revert_network = torch.optim.Adam(self.revert_network.parameters())
         # self.optimizer_discrim_CoverHidden = torch.optim.Adam(self.discriminator_CoverHidden.parameters())
@@ -126,6 +132,7 @@ class ReversibleImageNetwork_hanson:
             Loss：B与原图的loss，Hidden与原图的loss
         """
         batch_size = Cover.shape[0]
+        self.localizer.train()
         self.preprocessing_network.train()
         self.revert_network.train()
         self.discriminator_patchRecovery.train()
@@ -139,15 +146,16 @@ class ReversibleImageNetwork_hanson:
 
         with torch.enable_grad():
             """ Run, Train the discriminator"""
+            self.optimizer_localizer.zero_grad()
             self.optimizer_preprocessing_network.zero_grad()
             self.optimizer_revert_network.zero_grad()
             self.optimizer_discrim_patchHiddem.zero_grad()
             self.optimizer_discrim_patchRecovery.zero_grad()
             Marked = self.preprocessing_network(Cover)
             Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.0 * self.roundCount), \
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.25 * self.roundCount), \
                                                self.config.crop_size * (0.75 + 0.0 * self.roundCount)
-            Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
+            Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Attacked, Cover=Cover,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,cropout_mask[:, 0, :, :].unsqueeze(1), stage=256) #up_256
             # Up_256 = self.upsample128_256(up_256)
@@ -241,14 +249,18 @@ class ReversibleImageNetwork_hanson:
             loss_enc_dec.backward()
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
-            # print(
-            #     "Curr alpha: {0:.6f}, (Total) {1:.6f}, global: {2:.6f}, local: {4:.6f} (R64) Overall Loss {3:.6f}"
-            #     .format(self.alpha, loss_R256, loss_R256_global, loss_R128_global,loss_R256_local))
-            # print(report_str)
+
+            """ Finally, Train Localizer """
+
+            pred_label = self.localizer(CropoutWithCover.detach())
+            loss_localization = self.bce_with_logits_loss(pred_label, cropout_mask)
+            loss_localization.backward()
+            self.optimizer_localizer.step()
+
 
         losses = {
             'loss_sum': loss_enc_dec.item(),
-            'loss_localization': 0, #loss_localization.item(),
+            'loss_localization': loss_localization.item(),
             'loss_cover': loss_cover.item(),
             'loss_recover': loss_R256.item(),
             'loss_discriminator_enc': g_loss_adv_enc.item(),
@@ -257,15 +269,7 @@ class ReversibleImageNetwork_hanson:
 
         return losses, (Marked, Recovered, Cropped_out)
 
-        # """ Localizer (deleted) """
-        # x_1_crop, cropout_label, _ = self.cropout_layer(x_hidden, Cover)
-        # x_1_gaussian = self.gaussian(x_1_crop)
-        # x_1_resize = self.resize_layer(x_1_gaussian)
-        # x_1_attack = self.jpeg_layer(x_1_crop)
-        # pred_label = self.localizer(x_1_attack.detach())
-        # loss_localization = self.bce_with_logits_loss(pred_label, cropout_label)
-        # loss_localization.backward()
-        # self.optimizer_localizer.step()
+
 
     def test_on_batch(self, Cover):
         batch_size = Cover.shape[0]
