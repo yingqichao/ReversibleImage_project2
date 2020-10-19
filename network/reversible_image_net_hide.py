@@ -147,8 +147,8 @@ class ReversibleImageNetwork_qichao:
             # Gauss = self.gaussian(Marked)
             Attacked = self.jpeg_layer(Marked) # 0.5*Marked+0.5*self.jpeg_layer(Marked)
 
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.5 + 0.5 * self.roundCount),\
-                                               self.config.crop_size * (0.5 + 0.5 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.25 * self.roundCount),\
+                                               self.config.crop_size * (0.75 + 0.25 * self.roundCount)
             Cropped_out, cropout_label, cropout_mask = self.cropout_layer(Attacked,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
 
