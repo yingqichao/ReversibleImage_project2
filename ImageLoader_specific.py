@@ -4,10 +4,35 @@
 import os
 import cv2
 import numpy as np
-import numpy.random as random
-import math
-from torch.utils.data import Dataset
 import scipy.io as scio
+import torch
+from PIL import Image
+from torch.utils.data import Dataset
+
+# transform = transforms.Compose([
+#  transforms.ToTensor(), # 将图片转换为Tensor,归一化至[0,1]
+#  # transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5]) # 标准化至[-1,1]
+# ])
+class MyDataset(Dataset):
+	def __init__(self,root,transform):
+# 所有图片的绝对路径
+		imgs=os.listdir(root)
+		self.imgs=[os.path.join(root,k) for k in imgs]
+		self.transforms=transform
+
+	def __getitem__(self, index):
+		img_path = self.imgs[index]
+		pil_img = Image.open(img_path)
+		if self.transforms:
+			data = self.transforms(pil_img)
+		else:
+			pil_img = np.asarray(pil_img)
+			data = torch.from_numpy(pil_img)
+		return data
+
+	def __len__(self):
+		return len(self.imgs)
+
 
 class ImageLoader(Dataset):
 	def __init__(self,data_dir,w_path,transform=None):

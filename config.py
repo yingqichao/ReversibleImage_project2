@@ -5,7 +5,7 @@ class GlobalConfig():
     def __init__(self):
 
         self.num_epochs = 100
-        self.train_batch_size = 2
+        self.train_batch_size = 4
         self.test_batch_size = 1
 
         self.Height = 256
