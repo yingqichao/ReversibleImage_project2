@@ -83,7 +83,7 @@ if __name__ =='__main__':
                 data, _ = train_batch
                 train_covers = data.to(device)
                 losses, output = net.test_on_batch(train_covers)
-                x_hidden, x_recover, x_attacked = output
+                x_hidden, x_recover, x_attacked, pred_label = output
                 # losses
                 train_loss_discriminator_enc.append(losses['loss_discriminator_enc'])
                 train_loss_discriminator_recovery.append(losses['loss_discriminator_recovery'])
@@ -105,11 +105,9 @@ if __name__ =='__main__':
                     #                  './Images/recovery',
                     #                  std=config.std,
                     #                  mean=config.mean)
-                    # util.save_images(p5_final[i].cpu(),
-                    #                  'epoch-{0}-recovery-batch-{1}-{2}_after5.png'.format(epoch, idx, i),
-                    #                  './Images/recovery',
-                    #                  std=config.std,
-                    #                  mean=config.mean)
+                    util.save_images(pred_label[i].cpu(),
+                                     'epoch-{0}-localize-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                     './Images/localized', )
                     util.save_images(x_attacked[i].cpu(),
                                      'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
                                      './Images/attacked',
@@ -201,7 +199,8 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N17')
+        net.load_model(MODELS_PATH + 'Epoch N8')
+        net.load_localizer(MODELS_PATH + 'Epoch N1')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = test(net, test_loader, config)

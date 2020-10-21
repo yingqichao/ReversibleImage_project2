@@ -117,4 +117,4 @@ class Prep_pureUnet(nn.Module):
         up0 = self.finalH(up1_cat)
         # out_cat = torch.cat((up0, p), 1)
         # out = self.finalH2(out_cat)
-        return p+up0
+        return up0

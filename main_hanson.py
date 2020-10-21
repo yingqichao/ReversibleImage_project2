@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import torch
+import torch.distributed as dist
 import torchvision.transforms as transforms
 from torch import utils
 from torchvision import datasets
@@ -11,15 +12,18 @@ from util import util
 from config import GlobalConfig
 # from network.reversible_image_net_hide import RNet_test
 from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
+from ImageLoader_specific import MyDataset
 
 if __name__ =='__main__':
     # Setting
     config = GlobalConfig()
-    isSelfRecovery = True
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    print("torch.distributed.is_available: "+str(torch.distributed.is_available()))
+    # dist.init_process_group(backend='nccl', init_method='env://')
     skipTraining = config.skipTraining
 
     device = config.device
-    print(device)
+    print("{0}, Device Count: {1}".format(device,torch.cuda.device_count()))
     # Hyper Parameters
     num_epochs = config.num_epochs
     train_batch_size = config.train_batch_size
@@ -30,6 +34,7 @@ if __name__ =='__main__':
     # beta = config.beta
     # if use_Vgg:
     #     beta = 10
+    torch.set_printoptions(profile="full")
 
     MODELS_PATH = config.MODELS_PATH
     VALID_PATH = config.VALID_PATH
@@ -115,36 +120,36 @@ if __name__ =='__main__':
     #
     #     return net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery
 
-    def train_localizer(net, specific_loader, config):
-        """ 到这里位置，第一阶段训练已经完成，不然这个函数运行不起来 """
-
-        train_loss_localization  = []
-        hist_loss_localization = []
-        for epoch in range(num_epochs):
-            # train
-            for idx, train_batch in enumerate(specific_loader):
-                data, _ = train_batch
-                train_covers = data.to(device)
-                losses, crop_Predicted = net.train_on_batch(train_covers)
-                # losses
-                train_loss_localization.append(losses['loss_localization'])
-
-
-            mean_train_loss_localization = np.mean(train_loss_localization)
-            hist_loss_localization.append(mean_train_loss_localization)
-
-            net.save_state_dict(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
-            # Prints epoch average loss
-            print('Epoch [{0}/{1}], Average_loss: Localization Loss {2:.4f}'.format(
-                epoch + 1, num_epochs, mean_train_loss_localization))
-
-            # validate
-            # for idx, test_batch in enumerate(test_loader):
-            #     data, _ = test_batch
-            #     test_covers = data.to(device)
-            #     losses, output = net.validate_on_batch(test_covers, test_covers)
-
-        return net, hist_loss_localization
+    # def train_localizer(net, specific_loader, config):
+    #     """ 到这里位置，第一阶段训练已经完成，不然这个函数运行不起来 """
+    #
+    #     train_loss_localization  = []
+    #     hist_loss_localization = []
+    #     for epoch in range(num_epochs):
+    #         # train
+    #         for idx, train_batch in enumerate(specific_loader):
+    #             data, _ = train_batch
+    #             train_covers = data.to(device)
+    #             losses, crop_Predicted = net.train_on_batch(train_covers)
+    #             # losses
+    #             train_loss_localization.append(losses['loss_localization'])
+    #
+    #
+    #         mean_train_loss_localization = np.mean(train_loss_localization)
+    #         hist_loss_localization.append(mean_train_loss_localization)
+    #
+    #         net.save_state_dict(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
+    #         # Prints epoch average loss
+    #         print('Epoch [{0}/{1}], Average_loss: Localization Loss {2:.4f}'.format(
+    #             epoch + 1, num_epochs, mean_train_loss_localization))
+    #
+    #         # validate
+    #         # for idx, test_batch in enumerate(test_loader):
+    #         #     data, _ = test_batch
+    #         #     test_covers = data.to(device)
+    #         #     losses, output = net.validate_on_batch(test_covers, test_covers)
+    #
+    #     return net, hist_loss_localization
 
     def train(net, train_loader, config):
         """ 到这里位置，第一阶段训练已经完成，不然这个函数运行不起来 """
@@ -159,7 +164,7 @@ if __name__ =='__main__':
                 data, _ = train_batch
                 train_covers = data.to(device)
                 losses, output = net.train_on_batch(train_covers)
-                x_hidden, x_recover, x_attacked = output
+                x_hidden, x_recover, x_attacked, pred_label, residual = output
                 # losses
                 train_loss_discriminator_enc.append(losses['loss_discriminator_enc'])
                 train_loss_discriminator_recovery.append(losses['loss_discriminator_recovery'])
@@ -181,16 +186,19 @@ if __name__ =='__main__':
                         #                  './Images/recovery',
                         #                  std=config.std,
                         #                  mean=config.mean)
-                        # util.save_images(p5_final[i].cpu(),
-                        #                  'epoch-{0}-recovery-batch-{1}-{2}_after5.png'.format(epoch, idx, i),
-                        #                  './Images/recovery',
-                        #                  std=config.std,
-                        #                  mean=config.mean)
+                        util.save_images(residual[i].cpu(),
+                                         'epoch-{0}-residual-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                         './Images/Residual',
+                                         std=config.std,
+                                         mean=config.mean)
                         util.save_images(x_attacked[i].cpu(),
                                          'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
                                          './Images/attacked',
                                          std=config.std,
                                          mean=config.mean)
+                        util.save_images(pred_label[i].cpu(),
+                                         'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                         './Images/localized',)
                         util.save_images(x_recover[i].cpu(),
                                          'epoch-{0}-recovery-batch-{1}-{2}.png'.format(epoch, idx, i),
                                          './Images/recovery',
@@ -235,32 +243,36 @@ if __name__ =='__main__':
     # ------------------------------------ Begin ---------------------------------------
     # Creates net object
     net = ReversibleImageNetwork_hanson(username="hanson", config=config)
-
+    transform = transforms.Compose([
+        transforms.Resize(config.Width),
+        transforms.RandomCrop(config.Width),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=config.mean,
+                             std=config.std)
+    ])
     # Creates training set
     train_loader = torch.utils.data.DataLoader(
         datasets.ImageFolder(
             TRAIN_PATH,
-            transforms.Compose([
-                transforms.Scale(config.Width),
-                transforms.RandomCrop(config.Width),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=config.mean,
-                                     std=config.std),
-
-            ])), batch_size=train_batch_size, num_workers=1,
+            transform), batch_size=train_batch_size, num_workers=4,
         pin_memory=True, shuffle=True, drop_last=True)
+
+    # dataset = MyDataset(TRAIN_PATH, transform)
+    # sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+    # train_loader = torch.utils.data.DataLoader(dataset=dataset,
+    #                          batch_size=train_batch_size, shuffle=False, sampler=sampler)
 
     # Creates test set
     test_loader = torch.utils.data.DataLoader(
         datasets.ImageFolder(
             TEST_PATH,
             transforms.Compose([
-                transforms.Scale(config.Width),
+                transforms.Resize(config.Width),
                 transforms.RandomCrop(config.Width),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=config.mean,
                                      std=config.std)
-            ])), batch_size=test_batch_size, num_workers=1,
+            ])), batch_size=test_batch_size, num_workers=4,
         pin_memory=True, shuffle=True, drop_last=True)
 
     """ Begin Pre-Training """
@@ -277,8 +289,8 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N4'
-                                     '')
+        net.load_model(MODELS_PATH + 'Epoch N4')
+        # net.load_localizer(MODELS_PATH + 'Epoch N1')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)

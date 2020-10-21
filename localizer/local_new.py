@@ -81,7 +81,7 @@ class Localize(nn.Module):
         )
 
         self.finalH = nn.Sequential(
-            SingleConv(128, out_channels=3, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(128, out_channels=1, kernel_size=3, stride=1, dilation=1, padding=1)
 
         )
         # self.finalH2 = nn.Sequential(
@@ -117,4 +117,4 @@ class Localize(nn.Module):
         up0 = self.finalH(up1_cat)
         # out_cat = torch.cat((up0, p), 1)
         # out = self.finalH2(out_cat)
-        return p+up0
+        return up0

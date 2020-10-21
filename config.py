@@ -5,7 +5,7 @@ class GlobalConfig():
     def __init__(self):
 
         self.num_epochs = 100
-        self.train_batch_size = 2
+        self.train_batch_size = 4
         self.test_batch_size = 1
 
         self.Height = 256
@@ -27,14 +27,11 @@ class GlobalConfig():
         self.loadfromEpochNum = 20
 
         """ Hyper Params """
-        self.hyper_localizer = 0.1
+        self.hyper_localizer = 1
         self.useVgg = False
-        if self.useVgg:
-            self.hyper_cover = 1
-            self.hyper_recovery = 2
-        else:
-            self.hyper_cover = 1
-            self.hyper_recovery = 2
+
+        self.hyper_cover = 1
+        self.hyper_recovery = 2
         self.hyper_discriminator = 1
         self.hyper_intermediate = 1
         self.hyper_mask = 5
@@ -44,9 +41,11 @@ class GlobalConfig():
         self.use_dataset = 'COCO'  # "ImageNet"
         self.MODELS_PATH = './output/models/'
         self.VALID_PATH = './sample/valid_coco/'
+        # self.TRAIN_PATH = './sample/Test/'
         self.TRAIN_PATH = './sample/train_coco/'
         self.TEST_PATH = './sample/Test/'
         self.HIDDEN_PATH = './sample/Test/'
+        self.DOODLE_PATH = './sample/Doodle_Test'
         self.skipTraining = False
         # Discriminator
         self.discriminator_channels = 64
