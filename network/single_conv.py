@@ -20,7 +20,8 @@ class SingleConv(nn.Module):
             nn.BatchNorm2d(out_channels),
             # nn.InstanceNorm2d(out_channels),
             # nn.ELU(inplace=True)
-            nn.LeakyReLU(0.2, True)
+            nn.PReLU(),
+            # nn.LeakyReLU(0.2, True)
         )
 
     def forward(self, x):
