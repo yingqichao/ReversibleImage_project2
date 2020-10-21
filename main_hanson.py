@@ -277,7 +277,8 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N1')
+        net.load_model(MODELS_PATH + 'Epoch N4'
+                                     '')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)

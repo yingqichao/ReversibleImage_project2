@@ -252,7 +252,7 @@ class ReversibleImageNetwork_hanson:
 
             """ Finally, Train Localizer """
 
-            pred_label = self.localizer(CropoutWithCover.detach())
+            pred_label = self.localizer(Cropped_out.detach())
             loss_localization = self.bce_with_logits_loss(pred_label, cropout_mask)
             loss_localization.backward()
             self.optimizer_localizer.step()
