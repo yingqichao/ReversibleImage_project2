@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from decoder.revert_new import Revert
+from decoder.revert_novel import Revert
 from noise_layers.identity import Identity
 from discriminator.discriminator import Discriminator
 from encoder.prep_unet import PrepNetwork_Unet
@@ -189,8 +189,8 @@ class ReversibleImageNetwork_hanson:
             random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
             Attacked = random_noise_layer(Marked)
             # Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.25 * self.roundCount), \
-                                               self.config.crop_size * (0.75 + 0.25 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (1.0 + 0.0 * self.roundCount), \
+                                               self.config.crop_size * (1.0 + 0.0 * self.roundCount)
             Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Attacked, Cover=self.Another,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             Out_64 = self.revert_network(Cropped_out,cropout_mask[:, 0, :, :].unsqueeze(1), stage=256) #up_256
@@ -289,7 +289,7 @@ class ReversibleImageNetwork_hanson:
             # loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
             # g_loss_adv_recovery /= 8
 
-            print("Loss on 256: Global {0:.6f} Local {1:.6f} Sum {2:.6f} Curr res Ratio {3:.6f}".format(loss_R256_global, loss_R256_local, loss_R256, self.res_count))
+            print("Loss on 256: Global {0:.6f} Local {1:.6f} Sum {2:.6f}".format(loss_R256_global, loss_R256_local, loss_R256))
             loss_enc_dec = self.config.hyper_recovery * loss_R256
             """Train Localizer """
             pred_label = None
@@ -408,7 +408,7 @@ class ReversibleImageNetwork_hanson:
             loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
             # g_loss_adv_recovery /= 8
             loss_R256 = (loss_R256_global+loss_R256_local)/2 # (loss_R256_local + loss_R256_global) / 2
-            print("Loss on 256: Global {0:.6f} Local {1:.6f} Sum {2:.6f} Curr res Ratio {3:.6f}".format(loss_R256_global, loss_R256_local, loss_R256, self.res_count))
+            print("Loss on 256: Global {0:.6f} Local {1:.6f} Sum {2:.6f}".format(loss_R256_global, loss_R256_local, loss_R256))
             loss_enc_dec = self.config.hyper_recovery * loss_R256
             """Localize Loss"""
             pred_label = self.localizer(CropoutWithCover)
@@ -449,8 +449,8 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Saved: " + path + '_revert_network.pth')
         torch.save(self.preprocessing_network, path + '_prep_network.pth')
         print("Successfully Saved: " + path + '_prep_network.pth')
-        # torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pth')
-        # print("Successfully Saved: " + path + '_discriminator_patchHidden.pth')
+        torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pth')
+        print("Successfully Saved: " + path + '_discriminator_patchHidden.pth')
         torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pth')
         print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth')
         # torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pth')

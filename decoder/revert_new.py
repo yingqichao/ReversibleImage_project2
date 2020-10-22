@@ -98,7 +98,7 @@ class Revert(nn.Module):
         # )
         self.final256 = nn.Sequential(
             nn.Conv2d(64, 3, kernel_size=1, padding=0),
-            # nn.Tanh()
+            nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
             nn.Conv2d(6, 3, kernel_size=1, padding=0),
@@ -172,7 +172,7 @@ class Revert(nn.Module):
 
         out_256 = self.final256(up1)
 
-        up0_cat = torch.cat((out_256 * crop_mask + ori_image * (1 - crop_mask), out_256), 1)
-        recovered = self.finalH2(up0_cat)
-        return recovered
+        #up0_cat = torch.cat((out_256 * crop_mask + ori_image * (1 - crop_mask), out_256), 1)
+        #recovered = self.finalH2(up0_cat)
+        return out_256
 
