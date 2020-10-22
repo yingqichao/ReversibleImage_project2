@@ -42,7 +42,7 @@ class GlobalConfig():
         self.MODELS_PATH = './output/models/'
         self.VALID_PATH = './sample/valid_coco/'
         # self.TRAIN_PATH = './sample/Test/'
-        self.TRAIN_PATH = './sample/train_coco/'
+        self.TRAIN_PATH = 'C:\\COCOdataset\\train2017' #'./sample/train_coco/'
         self.TEST_PATH = './sample/Test/'
         self.HIDDEN_PATH = './sample/Test/'
         self.DOODLE_PATH = './sample/Doodle_Test'
