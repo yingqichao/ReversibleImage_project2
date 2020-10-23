@@ -15,7 +15,7 @@ class Prep_pureUnet(nn.Module):
         # input channel: 3, output channel: 96
         """Features with Kernel Size 7---->channel:128 """
         self.downsample_8 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=5, stride=2, dilation=1, padding=2),
+            nn.Conv2d(3, 64, kernel_size=5, stride=1, dilation=1, padding=2),
             nn.ELU(inplace=True)
         )
         # 128
@@ -44,9 +44,17 @@ class Prep_pureUnet(nn.Module):
         # 1
         self.downsample_0 = SingleConv(512, out_channels=512, kernel_size=5, stride=2, dilation=1, padding=2)
         # 2
+        self.Up8 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
         self.upsample8_3 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+            SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
+        )
+        self.Up7 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
         )
         # 4
         self.upsample7_3 = nn.Sequential(
@@ -54,11 +62,19 @@ class Prep_pureUnet(nn.Module):
             SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 8
+        self.Up6 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
         self.upsample6_3 = nn.Sequential(
             # PureUpsampling(scale=2),
             SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 16
+        self.Up5 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
         self.upsample5_3 = nn.Sequential(
             # PureUpsampling(scale=2),
             SingleConv(1024, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
@@ -76,29 +92,29 @@ class Prep_pureUnet(nn.Module):
         # 64
         self.Up3 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(512, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
         )
         self.upsample3_3 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(1024, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
+            SingleConv(512, out_channels=256, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 128
         self.Up2 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(256, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(256, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
         )
         self.upsample2_3 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(512, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
+            SingleConv(256, out_channels=128, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # 256
         self.Up1 = nn.Sequential(
             PureUpsampling(scale=2),
-            SingleConv(128, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
         self.upsample1_3 = nn.Sequential(
             # PureUpsampling(scale=2),
-            SingleConv(256, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
+            SingleConv(128, out_channels=64, kernel_size=5, stride=1, dilation=1, padding=2)
         )
 
         self.final256 = nn.Sequential(
@@ -131,19 +147,19 @@ class Prep_pureUnet(nn.Module):
         # 1
         down0 = self.downsample_0(down1)
         # 2
-        up8_up = self.pureUpsamle(down0)
+        up8_up = self.Up8(down0)
         up8_cat = torch.cat((down1, up8_up), 1)
         up8 = self.upsample8_3(up8_cat)
         # 4
-        up7_up = self.pureUpsamle(up8)
+        up7_up = self.Up7(up8)
         up7_cat = torch.cat((down2, up7_up), 1)
         up7 = self.upsample7_3(up7_cat)
         # 8
-        up6_up = self.pureUpsamle(up7)
+        up6_up = self.Up6(up7)
         up6_cat = torch.cat((down3, up6_up), 1)
         up6 = self.upsample6_3(up6_cat)
         # 16
-        up5_up = self.pureUpsamle(up6)
+        up5_up = self.Up5(up6)
         up5_cat = torch.cat((down4, up5_up), 1)
         up5 = self.upsample5_3(up5_cat)
         # 32
