@@ -160,19 +160,19 @@ class Revert(nn.Module):
         # 1
         down0 = self.downsample_0(down1)
         #2
-        up8_up = self.pureUpsamle(down0)
+        up8_up = self.Up8(down0)
         up8_cat = torch.cat((down1, up8_up), 1)
         up8 = self.upsample8_3(up8_cat)
         #4
-        up7_up = self.pureUpsamle(up8)
+        up7_up = self.Up7(up8)
         up7_cat = torch.cat((down2, up7_up), 1)
         up7 = self.upsample7_3(up7_cat)
         #8
-        up6_up = self.pureUpsamle(up7)
+        up6_up = self.Up6(up7)
         up6_cat = torch.cat((down3, up6_up), 1)
         up6 = self.upsample6_3(up6_cat)
         #16
-        up5_up = self.pureUpsamle(up6)
+        up5_up = self.Up5(up6)
         # mask_16 = self.down16(crop_mask).expand(-1, up5_up.shape[1], -1, -1)
         up5_cat = torch.cat((down4, up5_up), 1)
         # up5_cat = torch.cat((up5_up*mask_16+down4*(1-mask_16), up5_up), 1)
