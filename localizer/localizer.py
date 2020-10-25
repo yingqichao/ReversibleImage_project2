@@ -1,87 +1,185 @@
 import torch
 import torch.nn as nn
-from  config import GlobalConfig
+
+from config import GlobalConfig
+from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
+from network.single_conv import SingleConv
+from network.pure_upsample import PureUpsampling
+from network.single_de_conv import SingleDeConv
 
 
-class LocalizeNetwork(nn.Module):
+
+class Localize(nn.Module):
     def __init__(self, config=GlobalConfig()):
-        super(LocalizeNetwork, self).__init__()
+        super(Localize, self).__init__()
         self.config = config
-        # Size: 256->128
-        self.Down1_conv = DoubleConv(3, 64)
-        self.Down1_pool = nn.MaxPool2d(2)
-
-        # Size: 128->64
-        self.Down2_conv = DoubleConv(64, 128)
-        self.Down2_pool = nn.MaxPool2d(2)
-
-        # Size: 64->32
-        self.Down3_conv = DoubleConv(128, 256)
-        self.Down3_pool = nn.MaxPool2d(2)
-
-        # Size: 32->16
-        self.Down4_conv = DoubleConv(256, 512)
-        self.Down4_pool = nn.MaxPool2d(2)
-
-        self.Conv5 = nn.Sequential(
-            DoubleConv(512, 1024),
-            DoubleConv(1024, 1024),
-            # DoubleConv(1024, 1024),
+        """Features with Kernel Size 7---->channel:128 """
+        self.downsample_8 = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, dilation=1, padding=1),
+            nn.ELU(inplace=True)
+        )
+        # 128
+        self.downsample_7 = SingleConv(64, out_channels=128, kernel_size=3, stride=2, dilation=1, padding=1)
+        # self.Down1_conv_7 = SingleConv(64, out_channels=64, kernel_size=7, stride=1, dilation=1, padding=3)
+        # 64
+        self.downsample_6 = SingleConv(128, out_channels=256, kernel_size=3, stride=2, dilation=1, padding=1)
+        # self.Down2_conv_7 = SingleConv(128, out_channels=128, kernel_size=7, stride=1, dilation=1, padding=3)
+        # 32
+        self.downsample_5 = SingleConv(256, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
+        # 16
+        self.downsample_4 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
+        # 16以下的卷积用4层conv
+        self.fullConv = nn.Sequential(
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # # 8
+        # self.downsample_3 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
+        # # 4
+        # self.downsample_2 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
+        # # 2
+        # self.downsample_1 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
+        # # 1
+        # self.downsample_0 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
+        # # 2
+        # self.Up8 = nn.Sequential(
+        #     PureUpsampling(scale=2),
+        #     SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # self.upsample8_3 = nn.Sequential(
+        #     # PureUpsampling(scale=2),
+        #     SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # self.Up7 = nn.Sequential(
+        #     PureUpsampling(scale=2),
+        #     SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # # 4
+        # self.upsample7_3 = nn.Sequential(
+        #     # PureUpsampling(scale=2),
+        #     SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # # 8
+        # self.Up6 = nn.Sequential(
+        #     PureUpsampling(scale=2),
+        #     SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # self.upsample6_3 = nn.Sequential(
+        #     # PureUpsampling(scale=2),
+        #     SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # # 16
+        # self.Up5 = nn.Sequential(
+        #     PureUpsampling(scale=2),
+        #     SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # self.upsample5_3 = nn.Sequential(
+        #     # PureUpsampling(scale=2),
+        #     SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        # )
+        # self.pureUpsamle = PureUpsampling(scale=2)
+        # 32
+        self.Up4 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        self.upsample4_3 = nn.Sequential(
+            # PureUpsampling(scale=2),
+            SingleConv(1024, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 64
+        self.Up3 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(512, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        self.upsample3_3 = nn.Sequential(
+            # PureUpsampling(scale=2),
+            SingleConv(512, out_channels=256, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 128
+        self.Up2 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(256, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        self.upsample2_3 = nn.Sequential(
+            # PureUpsampling(scale=2),
+            SingleConv(256, out_channels=128, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        # 256
+        self.Up1 = nn.Sequential(
+            PureUpsampling(scale=2),
+            SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
+        )
+        self.upsample1_3 = nn.Sequential(
+            # PureUpsampling(scale=2),
+            SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
 
-        # Size:16->32
-        self.Up4_convT = nn.ConvTranspose2d(1024, 512, 2, stride=2)
-        self.Up4_conv = DoubleConv(1024, 512)
-
-        # Size:32->64
-        self.Up3_convT = nn.ConvTranspose2d(512, 256, 2, stride=2)
-        self.Up3_conv = DoubleConv(512, 256)
-        # Size:64->128
-        self.Up2_convT = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.Up2_conv = DoubleConv(256, 128)
-        # Size:128->256
-        self.Up1_convT = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.Up1_conv = DoubleConv(128, 64)
-        # 最后一个卷积层得到输出
-        self.final_conv = nn.Conv2d(64, 1, 1)
-        # self.final_conv = nn.Conv2d(6, 3, 1)
+        self.final256 = nn.Sequential(
+            nn.Conv2d(64, 1, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
+        self.finalH2 = nn.Sequential(
+            nn.Conv2d(6, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
 
     def forward(self, p):
-        # Size: 256->128
-        down1_c = self.Down1_conv(p)
-        down1_p = self.Down1_pool(down1_c)
-
-        # Size: 128->64
-        down2_c = self.Down2_conv(down1_p)
-        down2_p = self.Down2_pool(down2_c)
-
-        # Size: 64->32
-        down3_c = self.Down3_conv(down2_p)
-        down3_p = self.Down3_pool(down3_c)
-
-        # Size: 32->16
-        down4_c = self.Down4_conv(down3_p)
-        down4_p = self.Down4_pool(down4_c)
-
-        mid = self.Conv5(down4_p)
-
-        up4_convT = self.Up4_convT(mid)
-        merge4 = torch.cat([up4_convT, down4_c], dim=1)
-        up4_conv = self.Up4_conv(merge4)
-        # Size: 32->64
-        up3_convT = self.Up3_convT(up4_conv)
-        merge3 = torch.cat([up3_convT, down3_c], dim=1)
-        up3_conv = self.Up3_conv(merge3)
-        # Size: 64->128
-        up2_convT = self.Up2_convT(up3_conv)
-        merge2 = torch.cat([up2_convT, down2_c], dim=1)
-        up2_conv = self.Up2_conv(merge2)
-        # Size: 128->256
-        up1_convT = self.Up1_convT(up2_conv)
-        merge1 = torch.cat([up1_convT, down1_c], dim=1)
-        up1_conv = self.Up1_conv(merge1)
-        #merge0 = torch.cat([up1_conv, p], dim=1)
-        out = self.final_conv(up1_conv)
-        out = out.squeeze()
-        return out
+        # 256
+        down8 = self.downsample_8(p)
+        # 128
+        down7 = self.downsample_7(down8)
+        # 64
+        down6 = self.downsample_6(down7)
+        # 32
+        down5 = self.downsample_5(down6)
+        # 16
+        down4 = self.downsample_4(down5)
+        up5 = self.fullConv(down4)
+        # # 8
+        # down3 = self.downsample_3(down4)
+        # # 4
+        # down2 = self.downsample_2(down3)
+        # # 2
+        # down1 = self.downsample_1(down2)
+        # # 1
+        # down0 = self.downsample_0(down1)
+        # # 2
+        # up8_up = self.Up8(down0)
+        # up8_cat = torch.cat((down1, up8_up), 1)
+        # up8 = self.upsample8_3(up8_cat)
+        # # 4
+        # up7_up = self.Up7(up8)
+        # up7_cat = torch.cat((down2, up7_up), 1)
+        # up7 = self.upsample7_3(up7_cat)
+        # # 8
+        # up6_up = self.Up6(up7)
+        # up6_cat = torch.cat((down3, up6_up), 1)
+        # up6 = self.upsample6_3(up6_cat)
+        # # 16
+        # up5_up = self.Up5(up6)
+        # up5_cat = torch.cat((down4, up5_up), 1)
+        # up5 = self.upsample5_3(up5_cat)
+        # 32
+        up4_up = self.Up4(up5)
+        up4_cat = torch.cat((down5, up4_up), 1)
+        up4 = self.upsample4_3(up4_cat)
+        # 64
+        up3_up = self.Up3(up4)
+        up3_cat = torch.cat((down6, up3_up), 1)
+        up3 = self.upsample3_3(up3_cat)
+        # 128
+        up2_up = self.Up2(up3)
+        up2_cat = torch.cat((down7, up2_up), 1)
+        up2 = self.upsample2_3(up2_cat)
+        # 256
+        up1_up = self.Up1(up2)
+        up1_cat = torch.cat((down8, up1_up), 1)
+        up1 = self.upsample1_3(up1_cat)
+        up0 = self.final256(up1)
+        # out_cat = torch.cat((up0, p), 1)
+        # out = self.finalH2(out_cat)
+        return up0

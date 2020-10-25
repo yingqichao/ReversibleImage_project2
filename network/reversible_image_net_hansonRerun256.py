@@ -1,24 +1,22 @@
 # %matplotlib inline
-import torch
 import numpy as np
+import torch
+import torch.nn as nn
+
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
 from decoder.revertRerun256 import Revert
-from noise_layers.identity import Identity
-from discriminator.discriminator import Discriminator
-from encoder.prep_unet import PrepNetwork_Unet
-from loss.vgg_loss import VGGLoss
-from network.pure_upsample import PureUpsampling
-from noise_layers.cropout import Cropout
-from noise_layers.dropout import Dropout
-from noise_layers.crop import Crop
-from noise_layers.jpeg_compression import JpegCompression
-from encoder.prep_pureUnet import Prep_pureUnet
-from noise_layers.DiffJPEG import DiffJPEG
 from discriminator.GANloss import GANLoss
 from discriminator.NLayerDiscriminator import NLayerDiscriminator
-from localizer.local_new import Localize
-import torch.nn as nn
+from discriminator.discriminator import Discriminator
+from encoder.prep_pureUnet import Prep_pureUnet
+from localizer.localizer import Localize
+from loss.vgg_loss import VGGLoss
+from network.pure_upsample import PureUpsampling
+from noise_layers.DiffJPEG import DiffJPEG
+from noise_layers.crop import Crop
+from noise_layers.cropout import Cropout
+
 
 class ReversibleImageNetwork_hanson:
     def __init__(self, username, config=GlobalConfig()):
@@ -469,28 +467,55 @@ class ReversibleImageNetwork_hanson:
         # checkpoint = torch.load('checkpoint.pth.tar')
         # model.load_state_dict(checkpoint['state_dict'])
         """"""
-        checkpoint = torch.load(path + '_localizer.pth.tar')
-        self.localizer.load_state_dict(checkpoint['state_dict'])
+        # print("Reading From: " + path + '_localizer.pth.tar')
+        # checkpoint = torch.load(path + '_localizer.pth.tar')
+        # self.localizer.load_state_dict(checkpoint['state_dict'])
+        # print(self.localizer)
         print("Successfully Loaded: " + path + '_localizer.pth.tar')
 
         checkpoint = torch.load(path + '_prep_network.pth.tar')
-        self.preprocessing_network.load_state_dict(checkpoint['state_dict'])
+        self.preprocessing_network.load_state_dict(checkpoint['state_dict'],strict=False)
         print(self.preprocessing_network)
         print("Successfully Loaded: " + path + '_prep_network.pth.tar')
 
         checkpoint = torch.load(path + '_revert_network.pth.tar')
-        self.revert_network.load_state_dict(checkpoint['state_dict'])
+        self.revert_network.load_state_dict(checkpoint['state_dict'],strict=False)
         print(self.revert_network)
         print("Successfully Loaded: " + path + '_revert_network.pth.tar')
 
         checkpoint = torch.load(path + '_discriminator_patchRecovery.pth.tar')
-        self.discriminator_patchRecovery.load_state_dict(checkpoint['state_dict'])
+        self.discriminator_patchRecovery.load_state_dict(checkpoint['state_dict'],strict=False)
         print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth.tar')
 
         checkpoint = torch.load(path + '_discriminator_CoverHidden.pth.tar')
-        self.discriminator_CoverHidden.load_state_dict(checkpoint['state_dict'])
+        self.discriminator_CoverHidden.load_state_dict(checkpoint['state_dict'],strict=False)
         print("Successfully Loaded: " + path + '_discriminator_CoverHidden.pth.tar')
 
-    def load_localizer(self, path):
+    def save_model_old(self, path):
+        torch.save(self.revert_network, path + '_revert_network.pth')
+        print("Successfully Saved: " + path + '_revert_network.pth')
+        torch.save(self.preprocessing_network, path + '_prep_network.pth')
+        print("Successfully Saved: " + path + '_prep_network.pth')
+        # torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pth')
+        # print("Successfully Saved: " + path + '_discriminator_patchHidden.pth')
+        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pth')
+        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth')
+        # torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pth')
+        # print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth')
+        torch.save(self.localizer, path + '_localizer.pth')
+        print("Successfully Saved: " + path + '__localizer.pth')
+
+    def load_model_old(self, path):
         self.localizer = torch.load(path + '_localizer.pth')
         print("Successfully Loaded: " + path + '_localizer.pth')
+        self.preprocessing_network = torch.load(path + '_prep_network.pth')
+        print(self.preprocessing_network)
+        print("Successfully Loaded: " + path + '_prep_network.pth')
+        self.revert_network = torch.load(path + '_revert_network.pth')
+        print(self.revert_network)
+        print("Successfully Loaded: " + path + '_revert_network.pth')
+        self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
+        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
+        # self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
+        # print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
+
