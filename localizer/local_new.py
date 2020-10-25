@@ -80,12 +80,14 @@ class Localize(nn.Module):
             SingleConv(256, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
 
-        self.finalH = nn.Sequential(
-            SingleConv(128, out_channels=1, kernel_size=3, stride=1, dilation=1, padding=1)
-
+        # self.finalH = nn.Sequential(
+        #     SingleConv(128, out_channels=1, kernel_size=3, stride=1, dilation=1, padding=1)
+        #
+        # )
+        self.final256 = nn.Sequential(
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            # nn.Tanh()
         )
-        # self.finalH2 = nn.Sequential(
-        #     nn.Conv2d(6, 3, kernel_size=1, padding=0))
 
     def forward(self, p):
         # Features with Kernel Size 7

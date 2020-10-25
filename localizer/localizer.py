@@ -120,11 +120,11 @@ class Localize(nn.Module):
 
         self.final256 = nn.Sequential(
             nn.Conv2d(64, 1, kernel_size=1, padding=0),
-            nn.Tanh()
+            # nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
             nn.Conv2d(6, 3, kernel_size=1, padding=0),
-            nn.Tanh()
+            # nn.Tanh()
         )
 
     def forward(self, p):

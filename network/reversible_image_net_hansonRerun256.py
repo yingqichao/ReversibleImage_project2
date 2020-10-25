@@ -80,7 +80,7 @@ class ReversibleImageNetwork_hanson:
         self.optimizer_preprocessing_network = torch.optim.Adam(self.preprocessing_network.parameters())
         self.optimizer_revert_network = torch.optim.Adam(self.revert_network.parameters())
         self.optimizer_discrim_CoverHidden = torch.optim.Adam(self.discriminator_CoverHidden.parameters())
-        # self.optimizer_discrim_HiddenRecovery = torch.optim.Adam(self.discriminator_HiddenRecovery.parameters())
+        self.optimizer_weird_layer = torch.optim.Adam(self.preprocessing_network.final256.parameters())
         # self.optimizer_discrim_patchHiddem = torch.optim.Adam(self.discriminator_patchHidden.parameters())
         self.optimizer_discrim_patchRecovery = torch.optim.Adam(self.discriminator_patchRecovery.parameters())
 
@@ -180,7 +180,7 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_CoverHidden.zero_grad()
             self.optimizer_discrim_patchRecovery.zero_grad()
             Residual = self.preprocessing_network(Cover)
-            Marked =  Residual+Cover
+            Marked = Residual+Cover
             random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
             Attacked = random_noise_layer(Marked)
             # Attacked = self.jpeg_layer(Marked)
@@ -294,6 +294,7 @@ class ReversibleImageNetwork_hanson:
 
             loss_enc_dec += loss_localization * self.config.hyper_localizer
             loss_enc_dec.backward()
+            # self.optimizer_weird_layer.step()
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
 
@@ -424,13 +425,13 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Saved: " + path + '_revert_network.pkl')
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
-        # torch.save(self.localizer, path + '_localizer.pkl')
-        # print("Successfully Saved: " + path + '_localizer.pkl')
-        # torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pkl')
-        # print("Successfully Saved: " + path + '_discriminator_patchRecovery.pkl')
+        torch.save(self.localizer, path + '_localizer.pkl')
+        print("Successfully Saved: " + path + '_localizer.pkl')
+        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pkl')
+        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pkl')
+        torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pkl')
+        print("Successfully Saved: " + path + '_discriminator_CoverHidden.pkl')
 
-    # torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
-    # print("Successfully Saved: " + path + '_discriminator_network.pkl')
 
     def save_model(self, path):
         """Saving"""
@@ -448,17 +449,17 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Saved: " + path + '_localizer.pth.tar')
 
     def load_state_dict_all(self, path):
-        # self.discriminator.load_state_dict(torch.load(path + '_discriminator_network.pkl'))
-        # print("Successfully Loaded: " + path + '_discriminator_network.pkl')
+        # self.discriminator_CoverHidden.load_state_dict(torch.load(path + '_discriminator_CoverHidden.pkl'), strict=False)
+        # print("Successfully Loaded: " + path + '_discriminator_CoverHidden.pkl')
         self.preprocessing_network.load_state_dict(torch.load(path + '_prep_network.pkl'), strict=False)
         print(self.preprocessing_network)
         print("Successfully Loaded: " + path + '_prep_network.pkl')
         self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'), strict=False)
         print(self.revert_network)
         print("Successfully Loaded: " + path + '_revert_network.pkl')
-        # self.localizer.load_state_dict(torch.load(path + '_localizer.pkl'))
+        # self.localizer.load_state_dict(torch.load(path + '_localizer.pkl'), strict=False)
         # print("Successfully Loaded: " + path + '_localizer.pkl')
-        # self.discriminator_patchRecovery.load_state_dict(torch.load(path + '_discriminator_patchRecovery.pkl'))
+        # self.discriminator_patchRecovery.load_state_dict(torch.load(path + '_discriminator_patchRecovery.pkl'), strict=False)
         # print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pkl')
 
     def load_model(self, path):
