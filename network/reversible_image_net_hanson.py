@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from decoder.revert_novel import Revert
+from decoder.revert_new import Revert
 from noise_layers.identity import Identity
 from discriminator.discriminator import Discriminator
 from encoder.prep_unet import PrepNetwork_Unet
@@ -14,7 +14,7 @@ from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
 from noise_layers.crop import Crop
 from noise_layers.jpeg_compression import JpegCompression
-from encoder.prep_novel import Prep_pureUnet
+from encoder.prep_pureUnetNew import Prep_pureUnet
 from noise_layers.DiffJPEG import DiffJPEG
 from discriminator.GANloss import GANLoss
 from discriminator.NLayerDiscriminator import NLayerDiscriminator
@@ -88,13 +88,14 @@ class ReversibleImageNetwork_hanson:
         self.optimizer_discrim_patchRecovery = torch.optim.Adam(self.discriminator_patchRecovery.parameters())
 
         """Attack Layers"""
-        self.noise_layers = [Identity().cuda()]
+        self.noise_layers = []
 
         self.cropout_layer = Cropout(config).cuda()
         if torch.cuda.device_count() > 1:
             self.cropout_layer = torch.nn.DataParallel(self.cropout_layer)
         self.jpeg_layer = DiffJPEG(256, 256, differentiable=True).cuda()
         self.jpeg_layer_90 = DiffJPEG(256, 256, quality=90, differentiable=True).cuda()
+        self.jpeg_layer_60 = DiffJPEG(256, 256, quality=60, differentiable=True).cuda()
         self.jpeg_layer_70 = DiffJPEG(256, 256, quality=70, differentiable=True).cuda()
         # if torch.cuda.device_count() > 1:
         #     self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
@@ -102,6 +103,7 @@ class ReversibleImageNetwork_hanson:
 
         self.noise_layers.append(self.jpeg_layer)
         self.noise_layers.append(self.jpeg_layer_70)
+        self.noise_layers.append(self.jpeg_layer_60)
         self.noise_layers.append(self.jpeg_layer_90)
         # if torch.cuda.device_count() > 1:
         #     self.crop_layer = torch.nn.DataParallel(self.crop_layer)
@@ -165,10 +167,10 @@ class ReversibleImageNetwork_hanson:
         self.preprocessing_network.train()
         self.revert_network.train()
         self.discriminator_patchRecovery.train()
-        # self.discriminator_CoverHidden.train()
-        self.alpha -= 1/(4*118287)
-        self.roundCount += 1/(4*118287)
-        self.res_count -= 1 / (4*118287)
+        self.discriminator_patchHidden.train()
+        self.alpha -= 1/(2*29571)
+        self.roundCount += 1/(2*29571)
+        self.res_count -= 1 / (2*29571)
         if self.alpha < 0:
             self.alpha = 0
         if self.roundCount > 1:
@@ -293,24 +295,25 @@ class ReversibleImageNetwork_hanson:
             loss_enc_dec = self.config.hyper_recovery * loss_R256
             """Train Localizer """
             pred_label = None
-            if loss_cover<(1.5+8.5*self.alpha):
+            if loss_cover<(1.5+6.5*self.alpha):
                 print("Localization Trained")
                 pred_label = self.localizer(CropoutWithCover.detach())
-                loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])
+                loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])/portion_attack*10
                 loss_localization.backward()
                 self.optimizer_localizer.step()
 
-            if loss_cover>(1.5+8.5*self.alpha):
+            if loss_cover>(1.5+3.5*self.alpha):
                 print("Cover Loss added")
                 loss_enc_dec += loss_cover * self.config.hyper_cover + g_loss_adv_enc * self.config.hyper_discriminator
             loss_enc_dec += g_loss_adv_recovery * self.config.hyper_discriminator
-            # loss_enc_dec += loss_localization * self.config.hyper_localizer
+            if pred_label is not None:
+                pred_label = self.localizer(CropoutWithCover)
+                loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1),
+                                                              cropout_mask[:, 0, :, :]) / portion_attack * 10
+                loss_enc_dec += loss_localization * self.config.hyper_localizer
             loss_enc_dec.backward()
             self.optimizer_preprocessing_network.step()
             self.optimizer_revert_network.step()
-
-
-
 
         losses = {
             'loss_sum': loss_enc_dec.item(),
@@ -445,18 +448,21 @@ class ReversibleImageNetwork_hanson:
     # print("Successfully Saved: " + path + '_discriminator_network.pkl')
 
     def save_model(self, path):
-        torch.save(self.revert_network, path + '_revert_network.pth')
-        print("Successfully Saved: " + path + '_revert_network.pth')
-        torch.save(self.preprocessing_network, path + '_prep_network.pth')
-        print("Successfully Saved: " + path + '_prep_network.pth')
-        torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pth')
-        print("Successfully Saved: " + path + '_discriminator_patchHidden.pth')
-        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pth')
-        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth')
-        # torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pth')
-        # print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth')
-        torch.save(self.localizer, path + '_localizer.pth')
-        print("Successfully Saved: " + path + '__localizer.pth')
+        """Saving"""
+        # torch.save({'state_dict': model.state_dict()}, 'checkpoint.pth.tar')
+        """"""
+        torch.save({'state_dict': self.revert_network.state_dict()}, path + '_revert_network.pth.tar')
+        print("Successfully Saved: " + path + '_revert_network.pth.tar')
+        torch.save({'state_dict': self.preprocessing_network.state_dict()}, path + '_prep_network.pth.tar')
+        print("Successfully Saved: " + path + '_prep_network.pth.tar')
+        torch.save({'state_dict': self.discriminator_patchRecovery.state_dict()},
+                   path + '_discriminator_patchRecovery.pth.tar')
+        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth.tar')
+        torch.save({'state_dict': self.discriminator_patchHidden.state_dict()},
+                   path + '_discriminator_patchHidden.pth.tar')
+        print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth.tar')
+        torch.save({'state_dict': self.localizer.state_dict()}, path + '_localizer.pth.tar')
+        print("Successfully Saved: " + path + '_localizer.pth.tar')
 
     def load_state_dict_all(self, path):
         # self.discriminator.load_state_dict(torch.load(path + '_discriminator_network.pkl'))
@@ -473,18 +479,32 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pkl')
 
     def load_model(self, path):
-        self.localizer = torch.load(path + '_localizer.pth')
-        print("Successfully Loaded: " + path + '_localizer.pth')
-        self.preprocessing_network = torch.load(path + '_prep_network.pth')
+        """Loading"""
+        # model = describe_model()
+        # checkpoint = torch.load('checkpoint.pth.tar')
+        # model.load_state_dict(checkpoint['state_dict'])
+        """"""
+        checkpoint = torch.load(path + '_localizer.pth.tar')
+        self.localizer.load_state_dict(checkpoint['state_dict'])
+        print("Successfully Loaded: " + path + '_localizer.pth.tar')
+
+        checkpoint = torch.load(path + '_prep_network.pth.tar')
+        self.preprocessing_network.load_state_dict(checkpoint['state_dict'])
         print(self.preprocessing_network)
-        print("Successfully Loaded: " + path + '_prep_network.pth')
-        self.revert_network = torch.load(path + '_revert_network.pth')
+        print("Successfully Loaded: " + path + '_prep_network.pth.tar')
+
+        checkpoint = torch.load(path + '_revert_network.pth.tar')
+        self.revert_network.load_state_dict(checkpoint['state_dict'])
         print(self.revert_network)
-        print("Successfully Loaded: " + path + '_revert_network.pth')
-        self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
-        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
-        # self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
-        # print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
+        print("Successfully Loaded: " + path + '_revert_network.pth.tar')
+
+        checkpoint = torch.load(path + '_discriminator_patchRecovery.pth.tar')
+        self.discriminator_patchRecovery.load_state_dict(checkpoint['state_dict'])
+        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth.tar')
+
+        checkpoint = torch.load(path + '_discriminator_patchHidden.pth.tar')
+        self.discriminator_patchHidden.load_state_dict(checkpoint['state_dict'])
+        print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth.tar')
 
     def load_localizer(self, path):
         self.localizer = torch.load(path + '_localizer.pth')

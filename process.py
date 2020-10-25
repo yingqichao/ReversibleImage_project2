@@ -1,12 +1,24 @@
-from DeepSteg import Net
 import torch
-from config import GlobalConfig
-from network.reversible_image_net import ReversibleImageNetwork_ying
-from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
-device = torch.device("cuda")
-MODELS_PATH = './output/models/'
-net = ReversibleImageNetwork_hanson(username="hanson", config=GlobalConfig())
-net.load_model(MODELS_PATH + 'Epoch N9')
-net.save_state_dict_all(MODELS_PATH + 'Epoch N9')
-# net.save_model(MODELS_PATH + 'Epoch N{}'.format(17))
 
+from config import GlobalConfig
+from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
+
+device = torch.device("cuda")
+MODELS_PATH = './output/models/Epoch N2'
+net = ReversibleImageNetwork_hanson(username="hanson", config=GlobalConfig())
+net.revert_network = torch.load(MODELS_PATH + '_revert_network.pth')
+net.localizer = torch.load(MODELS_PATH + '_localizer.pth')
+
+net.preprocessing_network = torch.load(MODELS_PATH + '_prep_network.pth')
+net.discriminator_patchRecovery = torch.load(MODELS_PATH + '_discriminator_patchRecovery.pth')
+net.discriminator_patchHidden = torch.load(MODELS_PATH + '_discriminator_patchHidden.pth')
+# net.save_state_dict_all(MODELS_PATH + 'Epoch N17')
+net.save_model(MODELS_PATH)
+
+
+
+# torch.save({'state_dict': net.revert_network.state_dict()}, MODELS_PATH + '_revert_network.pth.tar')
+# model = ReversibleImageNetwork_hanson(username="hanson", config=GlobalConfig())
+# checkpoint = torch.load(MODELS_PATH + '_revert_network.pth.tar')
+# model.revert_network.load_state_dict(checkpoint['state_dict'])
+# print('Success')

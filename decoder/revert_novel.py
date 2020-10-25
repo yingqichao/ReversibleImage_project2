@@ -29,10 +29,10 @@ class Revert(nn.Module):
         self.downsample_4 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
         # 16以下的卷积用4层conv
         self.fullConv = nn.Sequential(
-            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1),
-            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1),
-            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1),
-            SingleConv(512, out_channels=512, kernel_size=3, stride=1, dilation=1, padding=1)
+            SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2),
+            SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2),
+            SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2),
+            SingleConv(512, out_channels=512, kernel_size=5, stride=1, dilation=1, padding=2)
         )
         # # 8
         # self.downsample_3 = SingleConv(512, out_channels=512, kernel_size=3, stride=2, dilation=1, padding=1)
