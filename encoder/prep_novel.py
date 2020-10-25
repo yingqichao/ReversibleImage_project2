@@ -8,9 +8,9 @@ from network.single_conv import SingleConv
 from network.pure_upsample import PureUpsampling
 from network.single_de_conv import SingleDeConv
 
-class Localize(nn.Module):
+class Prep_pureUnet(nn.Module):
     def __init__(self,config=GlobalConfig()):
-        super(Localize, self).__init__()
+        super(Prep_pureUnet, self).__init__()
         self.config = config
         # input channel: 3, output channel: 96
         """Features with Kernel Size 7---->channel:128 """
@@ -118,7 +118,7 @@ class Localize(nn.Module):
         )
 
         self.final256 = nn.Sequential(
-            nn.Conv2d(64, 1, kernel_size=1, padding=0),
+            nn.Conv2d(64, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
@@ -179,6 +179,6 @@ class Localize(nn.Module):
         up1_cat = torch.cat((down8, up1_up), 1)
         up1 = self.upsample1_3(up1_cat)
         up0 = self.final256(up1)
-        # out_cat = torch.cat((up0, p), 1)
-        # out = self.finalH2(out_cat)
-        return up0
+        #up0_cat = torch.cat((p, up0), 1)
+        Hidden = p+up0
+        return Hidden

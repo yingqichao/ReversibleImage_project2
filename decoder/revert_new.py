@@ -4,15 +4,14 @@ import torch.nn as nn
 from config import GlobalConfig
 from network.conv_bn_relu import ConvBNRelu
 from network.double_conv import DoubleConv
+import util
 from network.single_conv import SingleConv
 from network.pure_upsample import PureUpsampling
-from network.single_de_conv import SingleDeConv
 
-class Localize(nn.Module):
+class Revert(nn.Module):
     def __init__(self,config=GlobalConfig()):
-        super(Localize, self).__init__()
+        super(Revert, self).__init__()
         self.config = config
-        # input channel: 3, output channel: 96
         """Features with Kernel Size 7---->channel:128 """
         self.downsample_8 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, stride=1, dilation=1, padding=1),
@@ -117,16 +116,41 @@ class Localize(nn.Module):
             SingleConv(128, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
 
+        # self.finalH1 = nn.Sequential(
+        #     SingleConv(64, out_channels=3 , kernel_size=5, stride=1, dilation=1, padding=2)
+        # )
+
+        # self.finalH2 = nn.Sequential(
+        #     nn.Conv2d(6, 3, kernel_size=1, padding=0),
+        # )
+        #
+        # self.final32 = nn.Sequential(
+        #     nn.Conv2d(512, 3, kernel_size=1, padding=0),
+        #     # nn.Tanh()
+        # )
+        # self.final64 = nn.Sequential(
+        #     nn.Conv2d(256, 3, kernel_size=1, padding=0),
+        #     # nn.Tanh()
+        # )
+        # self.final128 = nn.Sequential(
+        #     nn.Conv2d(128, 3, kernel_size=1, padding=0),
+        #     # nn.Tanh()
+        # )
         self.final256 = nn.Sequential(
-            nn.Conv2d(64, 1, kernel_size=1, padding=0),
+            nn.Conv2d(64, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
         self.finalH2 = nn.Sequential(
             nn.Conv2d(6, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
+        self.upsample2 = PureUpsampling(scale=2)
+        self.down16 = PureUpsampling(scale=16/256)
+        self.down32 = PureUpsampling(scale=32/256)
+        self.down64 = PureUpsampling(scale=64 / 256)
+        self.down128 = PureUpsampling(scale=128 / 256)
 
-    def forward(self, p):
+    def forward(self, p, crop_mask, stage):
         # 256
         down8 = self.downsample_8(p)
         # 128
@@ -162,23 +186,39 @@ class Localize(nn.Module):
         # up5_up = self.Up5(up6)
         # up5_cat = torch.cat((down4, up5_up), 1)
         # up5 = self.upsample5_3(up5_cat)
-        # 32
+
+        #32
         up4_up = self.Up4(up5)
-        up4_cat = torch.cat((down5, up4_up), 1)
+        mask_32 = self.down32(crop_mask).expand(-1, up4_up.shape[1], -1, -1)
+        # up4_cat = torch.cat((down5, up4_up), 1)
+        up4_cat = torch.cat((up4_up*mask_32+down5*(1-mask_32), up4_up), 1)
         up4 = self.upsample4_3(up4_cat)
-        # 64
+
+        #64
         up3_up = self.Up3(up4)
-        up3_cat = torch.cat((down6, up3_up), 1)
+        mask_64 = self.down64(crop_mask).expand(-1, up3_up.shape[1], -1, -1)
+        # up3_cat = torch.cat((down6, up3_up), 1)
+        up3_cat = torch.cat((up3_up*mask_64+down6*(1-mask_64), up3_up), 1)
         up3 = self.upsample3_3(up3_cat)
+
+
         # 128
         up2_up = self.Up2(up3)
-        up2_cat = torch.cat((down7, up2_up), 1)
+        mask_128 = self.down128(crop_mask).expand(-1, up2_up.shape[1], -1, -1)
+        # up2_cat = torch.cat((down7, up2_up), 1)
+        up2_cat = torch.cat((up2_up * mask_128 + down7 * (1 - mask_128), up2_up), 1)
         up2 = self.upsample2_3(up2_cat)
+
+
         # 256
         up1_up = self.Up1(up2)
-        up1_cat = torch.cat((down8, up1_up), 1)
+        # up2_cat = torch.cat((down7, up2_up), 1)
+        up1_cat = torch.cat((up1_up * crop_mask + down8 * (1 - crop_mask), up1_up), 1)
         up1 = self.upsample1_3(up1_cat)
-        up0 = self.final256(up1)
-        # out_cat = torch.cat((up0, p), 1)
-        # out = self.finalH2(out_cat)
-        return up0
+
+        out_256 = self.final256(up1)
+
+        #up0_cat = torch.cat((out_256 * crop_mask + ori_image * (1 - crop_mask), out_256), 1)
+        #recovered = self.finalH2(up0_cat)
+        return out_256
+

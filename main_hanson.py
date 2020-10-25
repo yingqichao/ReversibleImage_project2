@@ -196,9 +196,10 @@ if __name__ =='__main__':
                                          './Images/attacked',
                                          std=config.std,
                                          mean=config.mean)
-                        util.save_images(pred_label[i].cpu(),
-                                         'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
-                                         './Images/localized',)
+                        if pred_label is not None:
+                            util.save_images(pred_label[i].cpu(),
+                                             'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                             './Images/localized',)
                         util.save_images(x_recover[i].cpu(),
                                          'epoch-{0}-recovery-batch-{1}-{2}.png'.format(epoch, idx, i),
                                          './Images/recovery',
