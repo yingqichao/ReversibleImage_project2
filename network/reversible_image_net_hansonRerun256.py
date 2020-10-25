@@ -1,10 +1,9 @@
 # %matplotlib inline
 import torch
-import torch.nn as nn
 import numpy as np
 # from encoder.encoder_decoder import EncoderDecoder
 from config import GlobalConfig
-from decoder.revert import Revert
+from decoder.revertRerun256 import Revert
 from noise_layers.identity import Identity
 from discriminator.discriminator import Discriminator
 from encoder.prep_unet import PrepNetwork_Unet
@@ -51,9 +50,9 @@ class ReversibleImageNetwork_hanson:
         # else:
         #     self.localizer = LocalizeNetwork_noPool(config).cuda()
         """Discriminator"""
-        # self.discriminator_CoverHidden = Discriminator(config).cuda()
-        # if torch.cuda.device_count() > 1:
-        #     self.discriminator_CoverHidden = torch.nn.DataParallel(self.discriminator_CoverHidden)
+        self.discriminator_CoverHidden = Discriminator(config).cuda()
+        if torch.cuda.device_count() > 1:
+            self.discriminator_CoverHidden = torch.nn.DataParallel(self.discriminator_CoverHidden)
         # self.discriminator_HiddenRecovery = Discriminator(config).cuda()
         # self.discriminator_patchHidden = NLayerDiscriminator().cuda()
         # if torch.cuda.device_count() > 1:
@@ -82,27 +81,28 @@ class ReversibleImageNetwork_hanson:
         self.optimizer_localizer = torch.optim.Adam(self.localizer.parameters())
         self.optimizer_preprocessing_network = torch.optim.Adam(self.preprocessing_network.parameters())
         self.optimizer_revert_network = torch.optim.Adam(self.revert_network.parameters())
-        # self.optimizer_discrim_CoverHidden = torch.optim.Adam(self.discriminator_CoverHidden.parameters())
+        self.optimizer_discrim_CoverHidden = torch.optim.Adam(self.discriminator_CoverHidden.parameters())
         # self.optimizer_discrim_HiddenRecovery = torch.optim.Adam(self.discriminator_HiddenRecovery.parameters())
         # self.optimizer_discrim_patchHiddem = torch.optim.Adam(self.discriminator_patchHidden.parameters())
         self.optimizer_discrim_patchRecovery = torch.optim.Adam(self.discriminator_patchRecovery.parameters())
 
         """Attack Layers"""
-        self.noise_layers = [Identity().cuda()]
+        self.noise_layers = []
 
         self.cropout_layer = Cropout(config).cuda()
         if torch.cuda.device_count() > 1:
             self.cropout_layer = torch.nn.DataParallel(self.cropout_layer)
-        self.jpeg_layer = DiffJPEG(256, 256, differentiable=True).cuda()
         self.jpeg_layer_90 = DiffJPEG(256, 256, quality=90, differentiable=True).cuda()
+        self.jpeg_layer = DiffJPEG(256, 256, differentiable=True).cuda()
         self.jpeg_layer_70 = DiffJPEG(256, 256, quality=70, differentiable=True).cuda()
+        self.jpeg_layer_60 = DiffJPEG(256, 256, quality=60, differentiable=True).cuda()
         # if torch.cuda.device_count() > 1:
         #     self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
         self.crop_layer = Crop((0.2, 0.5), (0.2, 0.5)).cuda()
-
+        self.noise_layers.append(self.jpeg_layer_90)
         self.noise_layers.append(self.jpeg_layer)
         self.noise_layers.append(self.jpeg_layer_70)
-        self.noise_layers.append(self.jpeg_layer_90)
+        self.noise_layers.append(self.jpeg_layer_60)
         # if torch.cuda.device_count() > 1:
         #     self.crop_layer = torch.nn.DataParallel(self.crop_layer)
 
@@ -163,9 +163,9 @@ class ReversibleImageNetwork_hanson:
         self.preprocessing_network.train()
         self.revert_network.train()
         self.discriminator_patchRecovery.train()
-        # self.discriminator_CoverHidden.train()
-        self.alpha -= 1/(5*10240)
-        self.roundCount += 1/(5*10240)
+        self.discriminator_CoverHidden.train()
+        self.alpha -= 1/(118287)
+        self.roundCount += 1/(118287)
         self.res_count -= 1 / (2*10240)
         if self.alpha < 0:
             self.alpha = 0
@@ -179,16 +179,15 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_localizer.zero_grad()
             self.optimizer_preprocessing_network.zero_grad()
             self.optimizer_revert_network.zero_grad()
-            # self.optimizer_discrim_patchHiddem.zero_grad()
-            # self.optimizer_discrim_CoverHidden.zero_grad()
+            self.optimizer_discrim_CoverHidden.zero_grad()
             self.optimizer_discrim_patchRecovery.zero_grad()
             Residual = self.preprocessing_network(Cover)
-            Marked =  self.res_count*Residual+Cover
+            Marked =  Residual+Cover
             random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
             Attacked = random_noise_layer(Marked)
             # Attacked = self.jpeg_layer(Marked)
-            portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.25 * self.roundCount), \
-                                               self.config.crop_size * (0.75 + 0.25 * self.roundCount)
+            portion_attack, portion_maxPatch = self.config.attack_portion * (1.0 + 0.0 * self.roundCount), \
+                                               self.config.crop_size * (1.0 + 0.0 * self.roundCount)
             Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Attacked, Cover=self.Another,
                                                                           require_attack=portion_attack,max_size=portion_maxPatch)
             up_256, out_256 = self.revert_network(Cropped_out,cropout_mask[:, 0, :, :].unsqueeze(1), stage=256) #up_256
@@ -198,21 +197,21 @@ class ReversibleImageNetwork_hanson:
             Recovered = Out_256 #*cropout_mask+Cropped_out*(1-cropout_mask)
 
             """ Discriminate """
-            # d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device, dtype=torch.float32)
-            # d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device, dtype=torch.float32)
-            # g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device, dtype=torch.float32)
+            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device, dtype=torch.float32)
+            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device, dtype=torch.float32)
+            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device, dtype=torch.float32)
             """Discriminator A"""
             ## Patch GAN
             # loss_D_A = self.backward_D_basic(self.discriminator_patchHidden, Cover, Marked)
             # loss_D_A.backward()
             # self.optimizer_discrim_patchHiddem.step()
-            # d_on_cover = self.discriminator_CoverHidden(Cover)
-            # d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
-            # d_loss_on_cover.backward()
-            # d_on_encoded = self.discriminator_CoverHidden(Marked.detach())
-            # d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
-            # d_loss_on_encoded.backward()
-            # self.optimizer_discrim_CoverHidden.step()
+            d_on_cover = self.discriminator_CoverHidden(Cover)
+            d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
+            d_loss_on_cover.backward()
+            d_on_encoded = self.discriminator_CoverHidden(Marked.detach())
+            d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
+            d_loss_on_encoded.backward()
+            self.optimizer_discrim_CoverHidden.step()
             """Discriminator B"""
             ## Patch GAN
             loss_D_B = self.backward_D_basic(self.discriminator_patchRecovery, Cover, Recovered)
@@ -249,18 +248,18 @@ class ReversibleImageNetwork_hanson:
 
             """Losses"""
             ## Local and Global Loss
-            # loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
             loss_R256_global = self.getVggLoss(Recovered, Cover)
             loss_R256_local = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)/portion_attack * 100 # Temp
-            # loss_R128_global = self.getVggLoss(self.DownsampleBy2(up_256), self.downsample256_128(Cover))
-            # loss_R128_local = self.mse_loss(Up_recover*cropout_mask, Cover*cropout_mask)/portion_attack * 100
-            # print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Current alpha: {2:.6f}"
-            #       .format(loss_R128_global,loss_R128_local,self.alpha))
+            loss_R128_global = self.getVggLoss(self.DownsampleBy2(up_256), self.downsample256_128(Cover))
+            loss_R128_local = self.mse_loss(self.DownsampleBy2(up_256)*self.DownsampleBy2(cropout_mask),
+                                            self.DownsampleBy2(Cover)*self.DownsampleBy2(cropout_mask))/portion_attack * 100
+            print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Current alpha: {2:.6f}"
+                  .format(loss_R128_global,loss_R128_local,self.alpha))
 
             loss_cover = self.getVggLoss(Marked, Cover)
             """Adversary Loss"""
-            # d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
-            # g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
+            d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
+            g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
             # g_loss_adv_enc = self.criterionGAN(self.discriminator_patchHidden(Marked), True)
             g_loss_adv_recovery = self.criterionGAN(self.discriminator_patchRecovery(Recovered), True)
             ## Global
@@ -287,12 +286,14 @@ class ReversibleImageNetwork_hanson:
             loss_enc_dec = self.config.hyper_recovery * loss_R256
             """Localize Loss"""
             pred_label = self.localizer(CropoutWithCover)
-            loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])
+            loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])/portion_attack*10
 
-            if loss_cover>5:
+            if loss_cover>(1.5+self.alpha*3.5):
                 print("Cover Loss added")
                 loss_enc_dec += loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
+                loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator
             loss_enc_dec += g_loss_adv_recovery * self.config.hyper_discriminator # g_loss_adv_enc * self.config.hyper_discriminator +
+
             loss_enc_dec += loss_localization * self.config.hyper_localizer
             loss_enc_dec.backward()
             self.optimizer_preprocessing_network.step()
@@ -306,7 +307,7 @@ class ReversibleImageNetwork_hanson:
             'loss_localization': loss_localization.item(),
             'loss_cover': loss_cover.item(),
             'loss_recover': loss_R256.item(),
-            'loss_discriminator_enc': 0, #g_loss_adv_enc.item(),
+            'loss_discriminator_enc': g_loss_adv_enc.item(),
             'loss_discriminator_recovery': g_loss_adv_recovery.item()
         }
 
@@ -328,11 +329,11 @@ class ReversibleImageNetwork_hanson:
 
             pred_label = self.localizer(CropoutWithCover)
             print(pred_label.shape)
-            loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])
+            loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])/0.2*10
             print(loss_localization.item())
 
         pred_label = self.sigmoid(pred_label)
-        return pred_label, CropoutWithCover
+        return pred_label
 
     def test_on_batch(self, Cover):
         batch_size = Cover.shape[0]
@@ -425,27 +426,28 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Saved: " + path + '_revert_network.pkl')
         torch.save(self.preprocessing_network.state_dict(), path + '_prep_network.pkl')
         print("Successfully Saved: " + path + '_prep_network.pkl')
-        torch.save(self.localizer, path + '_localizer.pkl')
-        print("Successfully Saved: " + path + '_localizer.pkl')
-        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pkl')
-        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pkl')
+        # torch.save(self.localizer, path + '_localizer.pkl')
+        # print("Successfully Saved: " + path + '_localizer.pkl')
+        # torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pkl')
+        # print("Successfully Saved: " + path + '_discriminator_patchRecovery.pkl')
 
     # torch.save(self.discriminator.state_dict(), path + '_discriminator_network.pkl')
     # print("Successfully Saved: " + path + '_discriminator_network.pkl')
 
     def save_model(self, path):
-        torch.save(self.revert_network, path + '_revert_network.pth')
-        print("Successfully Saved: " + path + '_revert_network.pth')
-        torch.save(self.preprocessing_network, path + '_prep_network.pth')
-        print("Successfully Saved: " + path + '_prep_network.pth')
-        # torch.save(self.discriminator_patchHidden, path + '_discriminator_patchHidden.pth')
-        # print("Successfully Saved: " + path + '_discriminator_patchHidden.pth')
-        torch.save(self.discriminator_patchRecovery, path + '_discriminator_patchRecovery.pth')
-        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth')
-        # torch.save(self.discriminator_CoverHidden, path + '_discriminator_CoverHidden.pth')
-        # print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth')
-        torch.save(self.localizer, path + '_localizer.pth')
-        print("Successfully Saved: " + path + '__localizer.pth')
+        """Saving"""
+        # torch.save({'state_dict': model.state_dict()}, 'checkpoint.pth.tar')
+        """"""
+        torch.save({'state_dict': self.revert_network.state_dict()}, path + '_revert_network.pth.tar')
+        print("Successfully Saved: " + path + '_revert_network.pth.tar')
+        torch.save({'state_dict': self.preprocessing_network.state_dict()}, path + '_prep_network.pth.tar')
+        print("Successfully Saved: " + path + '_prep_network.pth.tar')
+        torch.save({'state_dict': self.discriminator_patchRecovery.state_dict()}, path + '_discriminator_patchRecovery.pth.tar')
+        print("Successfully Saved: " + path + '_discriminator_patchRecovery.pth.tar')
+        torch.save({'state_dict': self.discriminator_CoverHidden.state_dict()},path + '_discriminator_CoverHidden.pth.tar')
+        print("Successfully Saved: " + path + '_discriminator_CoverHidden.pth.tar')
+        torch.save({'state_dict': self.localizer.state_dict()},path + '_localizer.pth.tar')
+        print("Successfully Saved: " + path + '_localizer.pth.tar')
 
     def load_state_dict_all(self, path):
         # self.discriminator.load_state_dict(torch.load(path + '_discriminator_network.pkl'))
@@ -456,98 +458,39 @@ class ReversibleImageNetwork_hanson:
         self.revert_network.load_state_dict(torch.load(path + '_revert_network.pkl'), strict=False)
         print(self.revert_network)
         print("Successfully Loaded: " + path + '_revert_network.pkl')
-        self.localizer.load_state_dict(torch.load(path + '_localizer.pkl'))
-        print("Successfully Loaded: " + path + '_localizer.pkl')
-        self.discriminator_patchRecovery.load_state_dict(torch.load(path + '_discriminator_patchRecovery.pkl'))
-        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pkl')
+        # self.localizer.load_state_dict(torch.load(path + '_localizer.pkl'))
+        # print("Successfully Loaded: " + path + '_localizer.pkl')
+        # self.discriminator_patchRecovery.load_state_dict(torch.load(path + '_discriminator_patchRecovery.pkl'))
+        # print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pkl')
 
     def load_model(self, path):
-        # self.localizer = torch.load(path + '_localizer.pth')
-        # print("Successfully Loaded: " + path + '_localizer.pth')
-        self.preprocessing_network = torch.load(path + '_prep_network.pth')
+        """Loading"""
+        # model = describe_model()
+        # checkpoint = torch.load('checkpoint.pth.tar')
+        # model.load_state_dict(checkpoint['state_dict'])
+        """"""
+        checkpoint = torch.load(path + '_localizer.pth.tar')
+        self.localizer.load_state_dict(checkpoint['state_dict'])
+        print("Successfully Loaded: " + path + '_localizer.pth.tar')
+
+        checkpoint = torch.load(path + '_prep_network.pth.tar')
+        self.preprocessing_network.load_state_dict(checkpoint['state_dict'])
         print(self.preprocessing_network)
-        print("Successfully Loaded: " + path + '_prep_network.pth')
-        self.revert_network = torch.load(path + '_revert_network.pth')
+        print("Successfully Loaded: " + path + '_prep_network.pth.tar')
+
+        checkpoint = torch.load(path + '_revert_network.pth.tar')
+        self.revert_network.load_state_dict(checkpoint['state_dict'])
         print(self.revert_network)
-        print("Successfully Loaded: " + path + '_revert_network.pth')
-        self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
-        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
-        # self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
-        # print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
+        print("Successfully Loaded: " + path + '_revert_network.pth.tar')
+
+        checkpoint = torch.load(path + '_discriminator_patchRecovery.pth.tar')
+        self.discriminator_patchRecovery.load_state_dict(checkpoint['state_dict'])
+        print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth.tar')
+
+        checkpoint = torch.load(path + '_discriminator_CoverHidden.pth.tar')
+        self.discriminator_CoverHidden.load_state_dict(checkpoint['state_dict'])
+        print("Successfully Loaded: " + path + '_discriminator_CoverHidden.pth.tar')
 
     def load_localizer(self, path):
         self.localizer = torch.load(path + '_localizer.pth')
         print("Successfully Loaded: " + path + '_localizer.pth')
-    # def load_state_dict_pretrain(self, path):
-    #     # state = torch.load(path)
-    #     # load_state = {k: v for k, v in state.items() if k not in state_list}
-    #     # print(state.items())
-    #     # model_state = model.state_dict()
-    #
-    #     # model_state.update(load_state)
-    #     self.hiding_network.load_state_dict(torch.load(path + '_pretrain_hiding_Epoch N20.pkl'))
-    #     self.reveal_network.load_state_dict(torch.load(path + '_pretrain_reveal_Epoch N20.pkl'))
-    #     print("Successfully Loaded: "+path)
-
-    # def pretrain_on_batch(self, Cover, Another):
-    #     """
-    #         预训练：训练Hiding Images in Images论文的结果，也即把Secret图像隐藏到Cover图像中
-    #         其中HidingNetwork和ExtractNetwork的训练主要是为了下面的train_on_batch
-    #     """
-    #     batch_size = Cover.shape[0]
-    #     self.pretrain_net.train()
-    #
-    #     with torch.enable_grad():
-    #         """ Run, Train the discriminator"""
-    #         # self.optimizer_localizer.zero_grad()
-    #         # self.optimizer_discrim.zero_grad()
-    #         Marked, Extracted = self.pretrain_net(Cover, Another)
-    #         """ Discriminate """
-    #         d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
-    #         d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
-    #         g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
-    #         d_on_cover = self.discriminator(Cover)
-    #         d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
-    #         d_loss_on_cover.backward()
-    #         d_on_encoded = self.discriminator(Marked.detach())
-    #         d_on_recovered = self.discriminator(Extracted.detach())
-    #         d_loss_on_encoded = self.bce_with_logits_loss(d_on_encoded, d_target_label_encoded)
-    #         d_loss_on_recovered = self.bce_with_logits_loss(d_on_recovered, d_target_label_encoded)
-    #         d_loss_on_fake_total = (d_loss_on_encoded + d_loss_on_recovered) / 2
-    #         d_loss_on_fake_total.backward()
-    #         self.optimizer_discrim.step()
-    #
-    #         """ Train PrepNetwork and RevertNetwork """
-    #         if self.config.useVgg == False:
-    #             loss_cover = self.mse_loss(Marked, Cover)
-    #             loss_recover = self.mse_loss(Extracted, Another)
-    #         else:
-    #             vgg_on_cov = self.vgg_loss(Cover)
-    #             vgg_on_another = self.vgg_loss(Another)
-    #             vgg_on_enc = self.vgg_loss(Marked)
-    #             loss_cover = self.mse_loss(vgg_on_cov, vgg_on_enc)
-    #             vgg_on_recovery = self.vgg_loss(Extracted)
-    #             loss_recover = self.mse_loss(vgg_on_another, vgg_on_recovery)
-    #         d_on_encoded_for_enc = self.discriminator(Marked)
-    #         g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
-    #         d_on_encoded_for_recovery = self.discriminator(Extracted)
-    #         g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
-    #         """ Total loss for EncoderDecoder """
-    #         # loss_enc_dec = loss_recover * self.config.hyper_recovery + loss_cover * self.config.hyper_cover
-    #         loss_enc_dec = g_loss_adv_recovery * self.config.hyper_discriminator + loss_recover * self.config.hyper_recovery \
-    #                        + loss_cover * self.config.hyper_cover + g_loss_adv_enc * self.config.hyper_discriminator
-    #         # + loss_cover * self.config.hyper_cover\
-    #         # + loss_localization_again * self.config.hyper_localizer\
-    #         # + g_loss_adv_enc * self.config.hyper_discriminator \
-    #         loss_enc_dec.backward()
-    #         self.optimizer_encoder_decoder_network.step()
-    #
-    #     losses = {
-    #         'loss_sum': loss_enc_dec.item(),
-    #         'loss_localization': 0,  # loss_localization.item(),
-    #         'loss_cover': loss_cover.item(),
-    #         'loss_recover': loss_recover.item(),
-    #         'loss_discriminator_enc': g_loss_adv_enc.item(),
-    #         'loss_discriminator_recovery': g_loss_adv_recovery.item()
-    #     }
-    #     return losses, (Marked, Extracted)

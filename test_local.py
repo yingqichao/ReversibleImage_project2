@@ -10,7 +10,7 @@ from torchvision import datasets
 from util import util
 from config import GlobalConfig
 # from network.reversible_image_net_hide import RNet_test
-from network.reversible_image_net_hanson import ReversibleImageNetwork_hanson
+from network.reversible_image_net_hansonRerun256 import ReversibleImageNetwork_hanson
 
 if __name__ =='__main__':
     # Setting
@@ -34,7 +34,7 @@ if __name__ =='__main__':
     MODELS_PATH = config.MODELS_PATH
     VALID_PATH = config.VALID_PATH
     TRAIN_PATH = config.TRAIN_PATH
-    TEST_PATH = config.TRAIN_PATH
+    TEST_PATH = config.TEST_PATH
 
     if not os.path.exists(MODELS_PATH):
         os.mkdir(MODELS_PATH)
@@ -48,7 +48,7 @@ if __name__ =='__main__':
             for idx, train_batch in enumerate(train_loader):
                 data, _ = train_batch
                 train_covers = data.to(device)
-                pred_label, CropoutWithCover = net.test_local(train_covers)
+                pred_label = net.test_local(train_covers)
 
                 for i in range(pred_label.shape[0]):
                     # util.save_images(p7_final[i].cpu(),
@@ -64,11 +64,11 @@ if __name__ =='__main__':
                     util.save_images(pred_label[i].cpu(),
                                      'localized-{1}-{2}.png'.format(epoch, idx, i),
                                      './Images/localized',)
-                    util.save_images(CropoutWithCover[i].cpu(),
-                                     'GroundTruth-{1}-{2}.png'.format(epoch, idx, i),
-                                     './Images/localized',
-                                     std=config.std,
-                                     mean=config.mean)
+                    # util.save_images(CropoutWithCover[i].cpu(),
+                    #                  'GroundTruth-{1}-{2}.png'.format(epoch, idx, i),
+                    #                  './Images/localized',
+                    #                  std=config.std,
+                    #                  mean=config.mean)
                 if idx>16:
                     break
                     # util.save_images(x_recover[i].cpu(),
@@ -96,14 +96,14 @@ if __name__ =='__main__':
         datasets.ImageFolder(
             TEST_PATH,
             transforms.Compose([
-                transforms.Scale(256),
-                transforms.RandomCrop(256),
+                # transforms.Scale(256),
+                # transforms.RandomCrop(256),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=config.mean,
                                      std=config.std),
 
             ])), batch_size=1, num_workers=1,
-        pin_memory=True, shuffle=True, drop_last=True)
+        pin_memory=True, shuffle=False, drop_last=True)
 
     # Creates test set
     # test_loader = torch.utils.data.DataLoader(
@@ -132,7 +132,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N1')
+        net.load_model(MODELS_PATH + 'Epoch N2')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         test(net, test_loader, config)
         # Plot loss through epochs

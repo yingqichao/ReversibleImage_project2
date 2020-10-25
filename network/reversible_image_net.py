@@ -8,7 +8,7 @@ from config import GlobalConfig
 from decoder.revert_unet import Revert_Unet
 from decoder.revert import Revert
 from decoder.revert_P3 import RevertNew_P3
-from decoder.revert_P5 import RevertNew_P5
+from decoder.revertRerun256 import Revert
 from encoder.prep_unet import PrepNetwork_Unet
 from loss.vgg_loss import VGGLoss
 from network.reveal import RevealNetwork
