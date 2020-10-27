@@ -34,15 +34,15 @@ class ReversibleImageNetwork_hanson:
         #self.pretrain_net = Pretrain_deepsteg(config=config).cuda()
         # self.encoder_decoder = Net(config=config).cuda()
         self.preprocessing_network = Prep_pureUnet(config=config).cuda()
-        if torch.cuda.device_count() > 1:
-            self.preprocessing_network = torch.nn.DataParallel(self.preprocessing_network)
+        # if torch.cuda.device_count() > 1:
+        #     self.preprocessing_network = torch.nn.DataParallel(self.preprocessing_network)
         # self.hiding_network = HidingNetwork().cuda()
         # self.reveal_network = RevealNetwork().cuda()
         """ Recovery Network """
         # self.revert_network = RevertNew(input_channel=3, config=config).cuda()
         self.revert_network = Revert(config=config).cuda()
-        if torch.cuda.device_count() > 1:
-            self.revert_network = torch.nn.DataParallel(self.revert_network)
+        # if torch.cuda.device_count() > 1:
+        #     self.revert_network = torch.nn.DataParallel(self.revert_network)
         """Localize Network"""
         # if self.username=="qichao":
         #     self.localizer = LocalizeNetwork(config).cuda()
@@ -50,15 +50,17 @@ class ReversibleImageNetwork_hanson:
         #     self.localizer = LocalizeNetwork_noPool(config).cuda()
         """Discriminator"""
         self.discriminator_CoverHidden = Discriminator(config).cuda()
-        if torch.cuda.device_count() > 1:
-            self.discriminator_CoverHidden = torch.nn.DataParallel(self.discriminator_CoverHidden)
+
+        self.localizer = Localize().cuda()
+        # if torch.cuda.device_count() > 1:
+        #     self.discriminator_CoverHidden = torch.nn.DataParallel(self.discriminator_CoverHidden)
         # self.discriminator_HiddenRecovery = Discriminator(config).cuda()
         self.discriminator_patchHidden = NLayerDiscriminator().cuda()
-        if torch.cuda.device_count() > 1:
-            self.discriminator_patchHidden = torch.nn.DataParallel(self.discriminator_patchHidden)
+        # if torch.cuda.device_count() > 1:
+        #     self.discriminator_patchHidden = torch.nn.DataParallel(self.discriminator_patchHidden)
         self.discriminator_patchRecovery = NLayerDiscriminator().cuda()
-        if torch.cuda.device_count() > 1:
-            self.discriminator_patchRecovery = torch.nn.DataParallel(self.discriminator_patchRecovery)
+        # if torch.cuda.device_count() > 1:
+        #     self.discriminator_patchRecovery = torch.nn.DataParallel(self.discriminator_patchRecovery)
         self.cover_label = 1
         self.encoded_label = 0
         """Vgg"""
@@ -86,7 +88,7 @@ class ReversibleImageNetwork_hanson:
         self.optimizer_discrim_patchRecovery = torch.optim.Adam(self.discriminator_patchRecovery.parameters())
 
         """Attack Layers"""
-        self.noise_layers = []
+        # self.noise_layers = []
 
         self.cropout_layer = Cropout(config).cuda()
         if torch.cuda.device_count() > 1:
@@ -95,13 +97,19 @@ class ReversibleImageNetwork_hanson:
         # self.jpeg_layer_90 = DiffJPEG(256, 256, quality=90, differentiable=True).cuda()
         # self.jpeg_layer_70 = DiffJPEG(256, 256, quality=70, differentiable=True).cuda()
         # self.jpeg_layer_60 = DiffJPEG(256, 256, quality=60, differentiable=True).cuda()
-        # self.jpeg_layer_50 = DiffJPEG(256, 256, quality=50, differentiable=True).cuda()
-        self.jpeg_layer = JpegCompression().cuda()
+        self.jpeg_layer_50 = DiffJPEG(256, 256, quality=50, differentiable=True).cuda()
         if torch.cuda.device_count() > 1:
-            self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
+            self.jpeg_layer_50 = torch.nn.DataParallel(self.jpeg_layer_50)
+        self.jpeg_layer_10 = DiffJPEG(256, 256, quality=10, differentiable=True).cuda()
+        if torch.cuda.device_count() > 1:
+            self.jpeg_layer_10 = torch.nn.DataParallel(self.jpeg_layer_10)
+        self.jpeg_layer = JpegCompression(self.config.device)
         # if torch.cuda.device_count() > 1:
         #     self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
-        self.crop_layer = Crop((0.2, 0.5), (0.2, 0.5)).cuda()
+        # if torch.cuda.device_count() > 1:
+        #     self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
+
+        # self.crop_layer = Crop((0.2, 0.5), (0.2, 0.5)).cuda()
         # self.noise_layers.append(self.jpeg_layer_80)
         # self.noise_layers.append(self.jpeg_layer_90)
         # self.noise_layers.append(self.jpeg_layer_70)
@@ -113,15 +121,15 @@ class ReversibleImageNetwork_hanson:
         # self.resize_layer = Resize(config, (0.5, 0.7)).cuda()
         # self.gaussian = Gaussian(config).cuda()
         # self.dropout_layer = Dropout(config,(0.4,0.6)).cuda()
-        """DownSampler"""
-        self.downsample256_64 = PureUpsampling(scale=64 / 256).cuda()
-        self.downsample256_128 = PureUpsampling(scale=128 / 256).cuda()
-        """Upsample"""
-        self.upsample64_256 = PureUpsampling(scale=256 / 64).cuda()
-        self.upsample128_256 = PureUpsampling(scale=256 / 128).cuda()
-
-        self.UpsampleBy2 = PureUpsampling(scale=2)
-        self.DownsampleBy2 = PureUpsampling(scale=1/2)
+        # """DownSampler"""
+        # self.downsample256_64 = PureUpsampling(scale=64 / 256).cuda()
+        # self.downsample256_128 = PureUpsampling(scale=128 / 256).cuda()
+        # """Upsample"""
+        # self.upsample64_256 = PureUpsampling(scale=256 / 64).cuda()
+        # self.upsample128_256 = PureUpsampling(scale=256 / 128).cuda()
+        #
+        # self.UpsampleBy2 = PureUpsampling(scale=2)
+        # self.DownsampleBy2 = PureUpsampling(scale=1/2)
 
         self.sigmoid = nn.Sigmoid()
 
@@ -186,29 +194,33 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_patchHiddem.zero_grad()
             self.optimizer_discrim_patchRecovery.zero_grad()
             Residual = self.preprocessing_network(Cover)
-            Marked = Residual+Cover
+            Marked = Residual + Cover
             # random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
             Attacked = self.jpeg_layer(Marked)
             """Cropout Attack"""
             portion_attack, portion_maxPatch = self.config.attack_portion * (1.0 + 0.0 * self.roundCount), \
                                                self.config.crop_size * (1.0 + 0.0 * self.roundCount)
             Cropped_out, _, cropout_mask = self.cropout_layer(Attacked, Cover=self.Another,
-                                                                          require_attack=portion_attack,max_size=portion_maxPatch)
+                                                              require_attack=portion_attack, max_size=portion_maxPatch)
             _, CropoutWithCover, localize_mask = self.cropout_layer(Attacked, Cover=self.Another,
-                                                                             require_attack=0.5,
-                                                                             max_size=0.25)
+                                                                    require_attack=0.5,
+                                                                    max_size=0.25)
 
-            # AttackedForLocalizer = self.jpeg_layer_50(CropoutWithCover)
-            up_256, out_256 = self.revert_network(Cropped_out, cropout_mask[:, 0, :, :].unsqueeze(1), stage=256) #up_256
+            AttackedForLocalizer = self.jpeg_layer_10(CropoutWithCover)
+            up_256, out_256 = self.revert_network(Cropped_out, cropout_mask[:, 0, :, :].unsqueeze(1),
+                                                  stage=256)  # up_256
             # Up_256 = self.upsample128_256(up_256)
             # Up_recover = up_256 * cropout_mask + Cropped_out * (1 - cropout_mask)
             Out_256 = up_256 * self.alpha + out_256 * (1 - self.alpha)
-            Recovered = Out_256 #*cropout_mask+Cropped_out*(1-cropout_mask)
+            Recovered = Out_256  # *cropout_mask+Cropped_out*(1-cropout_mask)
 
             """ Discriminate """
-            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device, dtype=torch.float32)
-            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device, dtype=torch.float32)
-            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device, dtype=torch.float32)
+            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device,
+                                              dtype=torch.float32)
+            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device,
+                                                dtype=torch.float32)
+            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device,
+                                                dtype=torch.float32)
             """Discriminator A"""
             ## Patch GAN
             loss_D_A = self.backward_D_basic(self.discriminator_patchHidden, Cover, Marked)
@@ -228,7 +240,7 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_patchRecovery.step()
 
             """Train Localizer """
-            pred_label = self.localizer(CropoutWithCover.detach())
+            pred_label = self.localizer(AttackedForLocalizer.detach())
             loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), localize_mask[:, 0, :, :]) / 0.5 * 100
             loss_localization.backward()
             self.optimizer_localizer.step()
@@ -258,8 +270,9 @@ class ReversibleImageNetwork_hanson:
             """Losses"""
             ## Local and Global Loss
             loss_R256_global = self.getVggLoss(Recovered, Cover)
-            loss_R256_globalPSNR = self.mse_loss(Recovered,Cover) * 100  # Temp
-            loss_R256_local = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)/portion_attack * 100 # Temp
+            loss_R256_globalPSNR = self.mse_loss(Recovered, Cover) * 100  # Temp
+            loss_R256_local = self.mse_loss(Recovered * cropout_mask,
+                                            Cover * cropout_mask) / portion_attack * 100  # Temp
             # loss_R128_global = self.getVggLoss(self.DownsampleBy2(up_256), self.downsample256_128(Cover))
             # loss_R128_local = self.mse_loss(self.DownsampleBy2(up_256)*self.DownsampleBy2(cropout_mask),
             #                                 self.DownsampleBy2(Cover)*self.DownsampleBy2(cropout_mask))/portion_attack * 100
@@ -291,19 +304,19 @@ class ReversibleImageNetwork_hanson:
             #     # report_str += "Patch {0:.6f} ".format(patch_vggLoss)
             # loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
             # g_loss_adv_recovery /= 8
-            loss_R256 = (loss_R256_global+loss_R256_local+loss_R256_globalPSNR)
+            loss_R256 = (loss_R256_global + loss_R256_local + loss_R256_globalPSNR)
             print("Loss on 256: Global VGG {0:.6f} PSNR:{3:.6f} Local {1:.6f} Sum {2:.6f}"
                   .format(loss_R256_global, loss_R256_local, loss_R256, loss_R256_globalPSNR))
             loss_enc_dec = self.config.hyper_recovery * loss_R256
             """Localize Loss"""
-            pred_label = self.localizer(CropoutWithCover)
+            pred_label = self.localizer(AttackedForLocalizer)
             loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), localize_mask[:, 0, :, :]) / 0.5 * 100
 
-            if loss_cover>(2+self.alpha*3.5):
+            if loss_cover > (2.5 + self.alpha * 3.5):
                 print("Cover Loss added")
                 loss_enc_dec += loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
                 loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator
-            loss_enc_dec += g_loss_adv_recovery * self.config.hyper_discriminator # g_loss_adv_enc * self.config.hyper_discriminator +
+            loss_enc_dec += g_loss_adv_recovery * self.config.hyper_discriminator  # g_loss_adv_enc * self.config.hyper_discriminator +
 
             loss_enc_dec += loss_localization * self.config.hyper_localizer
             loss_enc_dec.backward()
@@ -486,25 +499,35 @@ class ReversibleImageNetwork_hanson:
         print("Reading From: " + path + '_localizer.pth.tar')
         checkpoint = torch.load(path + '_localizer.pth.tar')
         self.localizer.load_state_dict(checkpoint['state_dict'],strict = False)
+        if torch.cuda.device_count() > 1:
+            self.localizer = torch.nn.DataParallel(self.localizer)
         print(self.localizer)
         print("Successfully Loaded: " + path + '_localizer.pth.tar')
 
         checkpoint = torch.load(path + '_prep_network.pth.tar')
         self.preprocessing_network.load_state_dict(checkpoint['state_dict'])
+        if torch.cuda.device_count() > 1:
+            self.preprocessing_network = torch.nn.DataParallel(self.preprocessing_network)
         print(self.preprocessing_network)
         print("Successfully Loaded: " + path + '_prep_network.pth.tar')
 
         checkpoint = torch.load(path + '_revert_network.pth.tar')
         self.revert_network.load_state_dict(checkpoint['state_dict'])
+        if torch.cuda.device_count() > 1:
+            self.revert_network = torch.nn.DataParallel(self.revert_network)
         print(self.revert_network)
         print("Successfully Loaded: " + path + '_revert_network.pth.tar')
 
         checkpoint = torch.load(path + '_discriminator_patchRecovery.pth.tar')
         self.discriminator_patchRecovery.load_state_dict(checkpoint['state_dict'])
+        if torch.cuda.device_count() > 1:
+            self.discriminator_patchRecovery = torch.nn.DataParallel(self.discriminator_patchRecovery)
         print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth.tar')
 
         checkpoint = torch.load(path + '_discriminator_patchHidden.pth.tar')
         self.discriminator_patchHidden.load_state_dict(checkpoint['state_dict'])
+        if torch.cuda.device_count() > 1:
+            self.discriminator_patchHidden = torch.nn.DataParallel(self.discriminator_patchHidden)
         print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth.tar')
 
     def save_model_old(self, path):
