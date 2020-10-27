@@ -323,118 +323,45 @@ class ReversibleImageNetwork_hanson:
 
         return losses, (Marked, Recovered, CropoutWithCover, self.sigmoid(pred_label), Residual)
 
-    def test_local(self, Cover):
+    def test_local(self, image, Cover, Label=None):
         batch_size = Cover.shape[0]
         self.localizer.eval()
         self.preprocessing_network.eval()
         self.revert_network.eval()
         if self.Another is None:
             print("Got Attack Image")
-            self.Another = self.jpeg_layer(Cover.clone())
+            self.Another = self.jpeg_layer(image.clone())
         with torch.enable_grad():
 
             # random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
             #
-            # Compress = self.jpeg_layer(Cover)
-            # Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Compress, Cover=self.Another,
-            #                                                                  require_attack=0.2,
-            #                                                                  max_size=0.2)
-            Attacked = self.jpeg_layer_10(Cover)
 
-            pred_label = self.localizer(Attacked)
-            Label = self.sigmoid(pred_label)
-            # up_256, recovered = self.revert_network(Cropped_out*(1-Label), Label[:, 0, :, :].unsqueeze(1), stage=256)
-            # loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])/0.2*10
-            # print(loss_localization.item())
+            if Label is None:
+                #什么攻击都不用加
+                Compress = Cover
+                Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Compress, Cover=self.Another,
+                                                                                 require_attack=0.2, min_size=0.2,
+                                                                                 max_size=0.4, blockNum=1)
+                Attacked = CropoutWithCover  # self.jpeg_layer_10(CropoutWithCover)
+                pred_label = self.localizer(Attacked)
+                Label = self.sigmoid(pred_label)
+                up_256, recovered = self.revert_network(Compress*(1-cropout_mask), cropout_mask[:, 0, :, :].unsqueeze(1), stage=256)
+                loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])/0.2*10
+                print(loss_localization.item())
+            else:
+                Compress = Cover
+                # Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Compress, Cover=self.Another,
+                #                                                                  require_attack=0.2, min_size=0.2,
+                #                                                                  max_size=0.4, blockNum=1)
+                # Attacked = Cropped_out
+                up_256, recovered = self.revert_network(Compress*(1-Label), Label[:, 0, :, :].unsqueeze(1), stage=256)
+                Cropped_out = None
 
 
-        return Label, None
 
-    def test_on_batch(self, Cover):
-        batch_size = Cover.shape[0]
-        self.preprocessing_network.eval()
-        self.revert_network.eval()
-        if self.Another is None:
-            print("Got Attack Image")
-            self.Another = Cover.clone()
-        with torch.enable_grad():
-            """ Run, Train the discriminator"""
 
-            Residual = self.preprocessing_network(Cover)
-            Marked = Residual + Cover
+        return Label, recovered, Cropped_out
 
-            Attacked = self.jpeg_layer_80(Marked)
-            # portion_attack, portion_maxPatch = self.config.attack_portion * (0.75 + 0.25 * self.roundCount), \
-            #                                    self.config.crop_size * (0.75 + 0.25 * self.roundCount)
-            portion_attack, portion_maxPatch = 0.3, 0.3
-            Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Attacked, Cover=self.Another,
-                                                                             require_attack=portion_attack,
-                                                                             max_size=portion_maxPatch)
-            up_256, out_256 = self.revert_network(Cropped_out, cropout_mask[:, 0, :, :].unsqueeze(1),
-                                                  stage=256)  # up_256
-            # Up_256 = self.upsample128_256(up_256)
-            # Up_recover = up_256 * cropout_mask + Cropped_out * (1 - cropout_mask)
-            Out_256 = up_256 * self.alpha + out_256 * (1 - self.alpha)
-            Recovered = Out_256  # *cropout_mask+Cropped_out*(1-cropout_mask)
-
-            """Losses"""
-            ## Local and Global Loss
-            # loss_R256_local = self.mse_loss(Recovered * cropout_mask, Cover * cropout_mask) / portion_attack * 100
-            # loss_R256_global = self.getVggLoss(Recovered, Cover)
-            loss_R256_local = self.mse_loss(Recovered*cropout_mask, Cover*cropout_mask)/portion_attack * 100 # Temp
-            # loss_R128_global = self.getVggLoss(self.DownsampleBy2(up_256), self.downsample256_128(Cover))
-            # loss_R128_local = self.mse_loss(Up_recover*cropout_mask, Cover*cropout_mask)/portion_attack * 100
-            # print("Loss on Pre: Global {0:.6f} Local {1:.6f}, Current alpha: {2:.6f}"
-            #       .format(loss_R128_global,loss_R128_local,self.alpha))
-
-            loss_cover = self.getVggLoss(Marked, Cover)
-            """Adversary Loss"""
-            # d_on_encoded_for_enc = self.discriminator_CoverHidden(Marked)
-            # g_loss_adv_enc = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
-            # g_loss_adv_enc = self.criterionGAN(self.discriminator_patchHidden(Marked), True)
-            g_loss_adv_recovery = self.criterionGAN(self.discriminator_patchRecovery(Recovered), True)
-            ## Global
-            # d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered)
-            # g_loss_adv_recovery = self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
-            ## Local
-            # g_loss_adv_recover = 0
-            loss_R256_global = 0
-            report_str, max_patch_vgg_loss = '                                     ', 0
-            for i in range(8):
-                crop_shape = self.crop_layer.get_random_rectangle_inside(Recovered)
-                Recovered_portion = self.crop_layer(noised_image=Recovered, shape=crop_shape)
-                Cover_portion = self.crop_layer(Cover, shape=crop_shape)
-                # d_on_encoded_for_recovery = self.discriminator_HiddenRecovery(Recovered_portion)
-                patch_vggLoss = self.getVggLoss(Recovered_portion, Cover_portion)
-                max_patch_vgg_loss = max(patch_vggLoss.item(), max_patch_vgg_loss)
-                loss_R256_global += patch_vggLoss
-                # g_loss_adv_recovery += self.bce_with_logits_loss(d_on_encoded_for_recovery, g_target_label_encoded)
-                # report_str += "Patch {0:.6f} ".format(patch_vggLoss)
-            loss_R256_global = loss_R256_global * max_patch_vgg_loss / loss_R256_global.item()
-            # g_loss_adv_recovery /= 8
-            loss_R256 = (loss_R256_global+loss_R256_local)/2 # (loss_R256_local + loss_R256_global) / 2
-            print("Loss on 256: Global {0:.6f} Local {1:.6f} Sum {2:.6f} Curr res Ratio {3:.6f}".format(loss_R256_global, loss_R256_local, loss_R256, self.res_count))
-            loss_enc_dec = self.config.hyper_recovery * loss_R256
-            """Localize Loss"""
-            pred_label = self.localizer(CropoutWithCover)
-            loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])
-
-            if loss_cover>2:
-                print("Cover Loss added")
-                loss_enc_dec += loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
-            loss_enc_dec += g_loss_adv_recovery * self.config.hyper_discriminator # g_loss_adv_enc * self.config.hyper_discriminator +
-            loss_enc_dec += loss_localization * self.config.hyper_localizer
-
-        losses = {
-            'loss_sum': loss_enc_dec.item(),
-            'loss_localization': loss_localization.item(),
-            'loss_cover': loss_cover.item(),
-            'loss_recover': loss_R256.item(),
-            'loss_discriminator_enc': 0,
-            'loss_discriminator_recovery': g_loss_adv_recovery.item()
-        }
-
-        return losses, (Marked, Recovered, Cropped_out, pred_label)
 
     def save_state_dict_all(self, path):
         torch.save(self.revert_network.state_dict(), path + '_revert_network.pkl')
@@ -486,7 +413,7 @@ class ReversibleImageNetwork_hanson:
         """"""
         print("Reading From: " + path + '_localizer.pth.tar')
         checkpoint = torch.load(path + '_localizer.pth.tar')
-        self.localizer.load_state_dict(checkpoint['state_dict'],strict = False)
+        self.localizer.load_state_dict(checkpoint['state_dict'])
         print(self.localizer)
         print("Successfully Loaded: " + path + '_localizer.pth.tar')
 

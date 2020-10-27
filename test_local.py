@@ -40,15 +40,21 @@ if __name__ =='__main__':
         os.mkdir(MODELS_PATH)
 
 
-    def test(net, train_loader, config):
+    def test(net, cover_loader, train_loader,  config, local_loader=None):
 
+        image, _ = iter(cover_loader).__next__()
+        image = image.cuda()
+        local_iter = iter(local_loader)
 
         for epoch in range(1):
             # train
             for idx, train_batch in enumerate(train_loader):
                 data, _ = train_batch
                 train_covers = data.to(device)
-                pred_label, recovered = net.test_local(train_covers)
+                mask, _ = local_iter.__next__()
+                mask = mask.cuda()
+                pred_label, recovered, CropoutWithCover = net.test_local(image, train_covers, None)
+                # pred_label, recovered, CropoutWithCover = net.test_local(image, train_covers,mask)
 
                 for i in range(pred_label.shape[0]):
                     # util.save_images(p7_final[i].cpu(),
@@ -69,8 +75,13 @@ if __name__ =='__main__':
                                          'recovered-{1}-{2}.png'.format(epoch, idx, i),
                                          './sample/Result', std=config.std,
                                      mean=config.mean)
-                if idx>16:
-                    break
+                    if CropoutWithCover is not None:
+                        util.save_images(CropoutWithCover[i].cpu(),
+                                         'CropoutWithCover-{1}-{2}.png'.format(epoch, idx, i),
+                                         './sample/Result', std=config.std,
+                                     mean=config.mean)
+
+
                     # util.save_images(x_recover[i].cpu(),
                     #                  'epoch-{0}-recovery-batch-{1}-{2}.png'.format(epoch, idx, i),
                     #                  './Images/recovery',
@@ -90,6 +101,31 @@ if __name__ =='__main__':
     # ------------------------------------ Begin ---------------------------------------
     # Creates net object
     net = ReversibleImageNetwork_hanson(username="hanson", config=config)
+    transform = transforms.Compose([
+        transforms.Resize(config.Width),
+        transforms.RandomCrop(config.Width),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=config.mean,
+                             std=config.std)
+    ])
+    train_loader = torch.utils.data.DataLoader(
+        datasets.ImageFolder(
+            TRAIN_PATH,
+            transform), batch_size=1, num_workers=1,
+        pin_memory=True, shuffle=True, drop_last=True)
+    local_loader = torch.utils.data.DataLoader(
+        datasets.ImageFolder(
+            "C:/Users/Qichao Ying/Desktop/experiments/processed_mask/",
+            transforms.Compose([
+                # transforms.Scale(256),
+                # transforms.RandomCrop(256),
+                transforms.ToTensor(),
+                # transforms.Normalize(mean=config.mean,
+                #                      std=config.std),
+
+            ])
+        ), batch_size=1, num_workers=1,
+        pin_memory=True, shuffle=False, drop_last=True)
 
     # Creates training set
     test_loader = torch.utils.data.DataLoader(
@@ -134,7 +170,7 @@ if __name__ =='__main__':
     if not config.skipMainTraining:
         net.load_model(MODELS_PATH + 'Epoch N1')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
-        test(net, test_loader, config)
+        test(net, train_loader,test_loader, config,local_loader)
         # Plot loss through epochs
         # util.plt_plot(hist_loss_cover)
         # util.plt_plot(hist_loss_recover)
