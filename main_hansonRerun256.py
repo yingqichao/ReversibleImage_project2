@@ -177,8 +177,8 @@ if __name__ =='__main__':
                                 losses['loss_discriminator_enc'], losses['loss_discriminator_recovery'])
 
                     print(str)
-                if idx >=1024:
-                    break
+                # if idx >=1024:
+                #     break
                 if idx % 128 == 127:
                     for i in range(x_recover.shape[0]):
                         # util.save_images(p7_final[i].cpu(),
@@ -206,7 +206,7 @@ if __name__ =='__main__':
                                          std=config.std,
                                          mean=config.mean)
                         util.save_images(x_hidden[i].cpu(),
-                                         'epoch-{0}-hidden-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                         'epoch-{0}-hidden-batch-{1}-{2}.jpg'.format(epoch, idx, i),
                                          './Images/hidden',
                                          std=config.std,
                                          mean=config.mean)

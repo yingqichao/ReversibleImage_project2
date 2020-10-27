@@ -16,7 +16,8 @@ class Cropout(nn.Module):
         self.config = config
         self.device = config.device
 
-    def forward(self, embedded_image,require_attack=None,max_size=None,Cover=None):
+    def forward(self, embedded_image,require_attack=None, min_size=0.1, max_size=None,Cover=None, blockNum=100):
+        block = 0
         if require_attack is None:
             require_attack = self.config.attack_portion
         if max_size is None:
@@ -28,12 +29,13 @@ class Cropout(nn.Module):
         cropout_mask = torch.zeros_like(embedded_image)
 
 
-        while sum_attacked<require_attack:
+        while sum_attacked<require_attack and block<blockNum:
             h_start, h_end, w_start, w_end, ratio = get_random_rectangle_inside(
-                image=embedded_image, height_ratio_range=(16/256, max_size), width_ratio_range=(16/256, max_size))
+                image=embedded_image, height_ratio_range=(min_size, max_size), width_ratio_range=(min_size, max_size))
             sum_attacked += ratio
             # 被修改的区域内赋值1, dims: batch channel height width
             cropout_mask[:, :, h_start:h_end, w_start:w_end] = 1
+            block += 1
 
         print("                                     Attacked Ratio: {0}, Max Crop Size: {1}".format(sum_attacked,max_size))
         tampered_image = embedded_image * (1-cropout_mask) + cover_image * cropout_mask
