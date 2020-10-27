@@ -14,7 +14,7 @@ class GlobalConfig():
         self.decoder_channels = 128
         self.min_required_block = 64
         self.attack_portion = 0.2
-        self.crop_size = 0.25
+        self.crop_size = 0.2
         self.encoder_features = 64
         self.water_features = 256
         self.device = torch.device("cuda")

@@ -80,15 +80,15 @@ class Prep_pureUnet(nn.Module):
             SingleConv(256, out_channels=64, kernel_size=3, stride=1, dilation=1, padding=1)
         )
 
-        # self.finalH = nn.Sequential(
-        #     SingleConv(128, out_channels=3, kernel_size=3, stride=1, dilation=1, padding=1)
-        #
-        # )
+        self.finalH = nn.Sequential(
+            SingleConv(128, out_channels=3, kernel_size=3, stride=1, dilation=1, padding=1)
 
-        self.final256 = nn.Sequential(
-            nn.Conv2d(128, 3, kernel_size=1, padding=0),
-            # nn.Tanh()
         )
+
+        # self.final256 = nn.Sequential(
+        #     nn.Conv2d(128, 3, kernel_size=1, padding=0),
+        #     # nn.Tanh()
+        # )
         # self.finalH2 = nn.Sequential(
         #     nn.Conv2d(6, 3, kernel_size=1, padding=0))
 
@@ -119,7 +119,8 @@ class Prep_pureUnet(nn.Module):
         up2_cat = torch.cat((down7, up2), 1)
         up1 = self.upsample1_3(up2_cat)
         up1_cat = torch.cat((down8, up1), 1)
-        up0 = self.final256(up1_cat)
+        up0 = self.finalH(up1_cat)
+        # up0 = self.final256(up1_cat)
         # out_cat = torch.cat((up0, p), 1)
         # out = self.finalH2(out_cat)
         return up0

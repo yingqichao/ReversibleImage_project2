@@ -19,8 +19,8 @@ class SingleConv(nn.Module):
                       kernel_size=kernel_size, padding=padding,stride=stride,dilation=dilation),
             nn.BatchNorm2d(out_channels),
             # nn.InstanceNorm2d(out_channels),
+            nn.PReLU()
             # nn.ELU(inplace=True)
-            nn.ELU(inplace=True)
             # nn.LeakyReLU(0.2, True)
         )
 

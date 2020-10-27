@@ -48,7 +48,7 @@ if __name__ =='__main__':
             for idx, train_batch in enumerate(train_loader):
                 data, _ = train_batch
                 train_covers = data.to(device)
-                pred_label = net.test_local(train_covers)
+                pred_label, recovered = net.test_local(train_covers)
 
                 for i in range(pred_label.shape[0]):
                     # util.save_images(p7_final[i].cpu(),
@@ -63,12 +63,12 @@ if __name__ =='__main__':
                     #                  mean=config.mean)
                     util.save_images(pred_label[i].cpu(),
                                      'localized-{1}-{2}.png'.format(epoch, idx, i),
-                                     './Images/localized',)
-                    # util.save_images(CropoutWithCover[i].cpu(),
-                    #                  'GroundTruth-{1}-{2}.png'.format(epoch, idx, i),
-                    #                  './Images/localized',
-                    #                  std=config.std,
-                    #                  mean=config.mean)
+                                     './sample/Result',)
+                    if recovered is not None:
+                        util.save_images(recovered[i].cpu(),
+                                         'recovered-{1}-{2}.png'.format(epoch, idx, i),
+                                         './sample/Result', std=config.std,
+                                     mean=config.mean)
                 if idx>16:
                     break
                     # util.save_images(x_recover[i].cpu(),
@@ -132,7 +132,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N2')
+        net.load_model(MODELS_PATH + 'Epoch N1')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         test(net, test_loader, config)
         # Plot loss through epochs
