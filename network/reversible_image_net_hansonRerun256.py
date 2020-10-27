@@ -95,7 +95,8 @@ class ReversibleImageNetwork_hanson:
         # self.jpeg_layer_90 = DiffJPEG(256, 256, quality=90, differentiable=True).cuda()
         # self.jpeg_layer_70 = DiffJPEG(256, 256, quality=70, differentiable=True).cuda()
         # self.jpeg_layer_60 = DiffJPEG(256, 256, quality=60, differentiable=True).cuda()
-        # self.jpeg_layer_50 = DiffJPEG(256, 256, quality=50, differentiable=True).cuda()
+        self.jpeg_layer_50 = DiffJPEG(256, 256, quality=50, differentiable=True).cuda()
+        self.jpeg_layer_10 = DiffJPEG(256, 256, quality=10, differentiable=True).cuda()
         self.jpeg_layer = JpegCompression().cuda()
         if torch.cuda.device_count() > 1:
             self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
@@ -198,7 +199,7 @@ class ReversibleImageNetwork_hanson:
                                                                              require_attack=0.5,
                                                                              max_size=0.25)
 
-            # AttackedForLocalizer = self.jpeg_layer_50(CropoutWithCover)
+            AttackedForLocalizer = self.jpeg_layer_10(CropoutWithCover)
             up_256, out_256 = self.revert_network(Cropped_out, cropout_mask[:, 0, :, :].unsqueeze(1), stage=256) #up_256
             # Up_256 = self.upsample128_256(up_256)
             # Up_recover = up_256 * cropout_mask + Cropped_out * (1 - cropout_mask)
@@ -228,7 +229,7 @@ class ReversibleImageNetwork_hanson:
             self.optimizer_discrim_patchRecovery.step()
 
             """Train Localizer """
-            pred_label = self.localizer(CropoutWithCover.detach())
+            pred_label = self.localizer(AttackedForLocalizer.detach())
             loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), localize_mask[:, 0, :, :]) / 0.5 * 100
             loss_localization.backward()
             self.optimizer_localizer.step()
@@ -296,10 +297,10 @@ class ReversibleImageNetwork_hanson:
                   .format(loss_R256_global, loss_R256_local, loss_R256, loss_R256_globalPSNR))
             loss_enc_dec = self.config.hyper_recovery * loss_R256
             """Localize Loss"""
-            pred_label = self.localizer(CropoutWithCover)
+            pred_label = self.localizer(AttackedForLocalizer)
             loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), localize_mask[:, 0, :, :]) / 0.5 * 100
 
-            if loss_cover>(2+self.alpha*3.5):
+            if loss_cover>(2.5+self.alpha*3.5):
                 print("Cover Loss added")
                 loss_enc_dec += loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
                 loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator
@@ -329,18 +330,18 @@ class ReversibleImageNetwork_hanson:
         self.revert_network.eval()
         if self.Another is None:
             print("Got Attack Image")
-            self.Another = Cover.clone()
+            self.Another = self.jpeg_layer(Cover.clone())
         with torch.enable_grad():
 
             # random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
             #
-            Compress = self.jpeg_layer(Cover)
-            Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Compress, Cover=self.Another,
-                                                                             require_attack=0.2,
-                                                                             max_size=0.2)
-            # Attacked = self.jpeg_layer_50(CropoutWithCover)
+            # Compress = self.jpeg_layer(Cover)
+            # Cropped_out, CropoutWithCover, cropout_mask = self.cropout_layer(Compress, Cover=self.Another,
+            #                                                                  require_attack=0.2,
+            #                                                                  max_size=0.2)
+            Attacked = self.jpeg_layer_10(Cover)
 
-            pred_label = self.localizer(CropoutWithCover)
+            pred_label = self.localizer(Attacked)
             Label = self.sigmoid(pred_label)
             # up_256, recovered = self.revert_network(Cropped_out*(1-Label), Label[:, 0, :, :].unsqueeze(1), stage=256)
             # loss_localization = self.bce_with_logits_loss(pred_label.squeeze(1), cropout_mask[:, 0, :, :])/0.2*10

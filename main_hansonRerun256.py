@@ -177,7 +177,7 @@ if __name__ =='__main__':
                                 losses['loss_discriminator_enc'], losses['loss_discriminator_recovery'])
 
                     print(str)
-                if idx >=1024:
+                if idx >=20480:
                     break
                 if idx % 128 == 127:
                     for i in range(x_recover.shape[0]):
