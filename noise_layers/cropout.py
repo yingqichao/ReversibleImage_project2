@@ -43,7 +43,7 @@ class Cropout(nn.Module):
         CropWithCover = embedded_image * (1-cropout_mask) + Cover * cropout_mask
 
 
-        return tampered_image, CropWithCover, cropout_mask # cropout_label.to(self.device)
+        return tampered_image, CropWithCover, cropout_mask, sum_attacked # cropout_label.to(self.device)
 
 # class Cropout(nn.Module):
 #     """

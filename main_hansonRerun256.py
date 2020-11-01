@@ -77,17 +77,17 @@ if __name__ =='__main__':
     #             if idx % 128 == 127:
     #                 for i in range(x_recover.shape[0]):
     #                     util.save_images(x_recover[i].cpu(),
-    #                                      'epoch-{0}-recovery-batch-{1}-{2}.png'.format(epoch, idx, i),
+    #                                      'epoch-{0}-recovery-batch-{1}-{2}.bmp'.format(epoch, idx, i),
     #                                      './Images/pretrain/recovery',
     #                                      std=config.std,
     #                                      mean=config.mean)
     #                     util.save_images(x_hidden[i].cpu(),
-    #                                      'epoch-{0}-hidden-batch-{1}-{2}.png'.format(epoch, idx, i),
+    #                                      'epoch-{0}-hidden-batch-{1}-{2}.bmp'.format(epoch, idx, i),
     #                                      './Images/pretrain/hidden',
     #                                      std=config.std,
     #                                      mean=config.mean)
     #                     util.save_images(train_covers[i].cpu(),
-    #                                      'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
+    #                                      'epoch-{0}-covers-batch-{1}-{2}.bmp'.format(epoch, idx, i),
     #                                      './Images/pretrain/original',
     #                                      std=config.std,
     #                                      mean=config.mean)
@@ -185,52 +185,52 @@ if __name__ =='__main__':
                 if idx % 128 == 127:
                     for i in range(x_recover.shape[0]):
                         # util.save_images(p7_final[i].cpu(),
-                        #                  'epoch-{0}-recovery-batch-{1}-{2}_after7.png'.format(epoch, idx, i),
+                        #                  'epoch-{0}-recovery-batch-{1}-{2}_after7.bmp'.format(epoch, idx, i),
                         #                  './Images/recovery',
                         #                  std=config.std,
                         #                  mean=config.mean)
                         util.save_images(residual[i].cpu(),
-                                         'epoch-{0}-residual-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                         'epoch-{0}-residual-batch-{1}-{2}.bmp'.format(epoch, idx, i),
                                          './Images/Residual',
                                          std=config.std,
                                          mean=config.mean)
                         util.save_images(x_attacked[i].cpu(),
-                                         'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                         'epoch-{0}-covers-batch-{1}-{2}.bmp'.format(epoch, idx, i),
                                          './Images/attacked',
                                          std=config.std,
                                          mean=config.mean)
                         util.save_images(x_attackedB[i].cpu(),
-                                         'epoch-{0}-covers-batch-{1}-{2}-B.png'.format(epoch, idx, i),
+                                         'epoch-{0}-covers-batch-{1}-{2}-B.bmp'.format(epoch, idx, i),
                                          './Images/attacked',
                                          std=config.std,
                                          mean=config.mean)
                         if pred_label is not None:
                             util.save_images(pred_label[i].cpu(),
-                                             'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
+                                             'epoch-{0}-covers-batch-{1}-{2}.bmp'.format(epoch, idx, i),
                                              './Images/localized')
                             util.save_images(x_predB[i].cpu(),
-                                             'epoch-{0}-covers-batch-{1}-{2}-B.png'.format(epoch, idx, i),
+                                             'epoch-{0}-covers-batch-{1}-{2}-B.bmp'.format(epoch, idx, i),
                                              './Images/localized')
                         util.save_images(x_recover[i].cpu(),
-                                         'epoch-{0}-recovery-batch-{1}-{2}.png'.format(epoch, idx, i),
-                                         './Images/recovery',
-                                         std=config.std,
-                                         mean=config.mean)
+                                         'epoch-{0}-recovery-batch-{1}-{2}.bmp'.format(epoch, idx, i),
+                                         './Images/recovery',)
+                                         # std=config.std,
+                                         # mean=config.mean)
                         util.save_images(x_recoverB[i].cpu(),
-                                         'epoch-{0}-recovery-batch-{1}-{2}-B.png'.format(epoch, idx, i),
-                                         './Images/recovery',
-                                         std=config.std,
-                                         mean=config.mean)
+                                         'epoch-{0}-recovery-batch-{1}-{2}-B.bmp'.format(epoch, idx, i),
+                                         './Images/recovery',)
+                                         # std=config.std,
+                                         # mean=config.mean)
                         util.save_images(x_hidden[i].cpu(),
-                                         'epoch-{0}-hidden-batch-{1}-{2}.jpg'.format(epoch, idx, i),
-                                         './Images/hidden',
-                                         std=config.std,
-                                         mean=config.mean)
+                                         'epoch-{0}-hidden-batch-{1}-{2}.bmp'.format(epoch, idx, i),
+                                         './Images/hidden',)
+                                         # std=config.std,
+                                         # mean=config.mean)
                         util.save_images(train_covers[i].cpu(),
-                                         'epoch-{0}-covers-batch-{1}-{2}.png'.format(epoch, idx, i),
-                                         './Images/cover',
-                                         std=config.std,
-                                         mean=config.mean)
+                                         'epoch-{0}-covers-batch-{1}-{2}.bmp'.format(epoch, idx, i),
+                                         './Images/cover',)
+                                         # std=config.std,
+                                         # mean=config.mean)
 
             mean_train_loss_discriminator_enc = np.mean(train_loss_discriminator_enc)
             mean_train_loss_discriminator_recovery = np.mean(train_loss_discriminator_recovery)
@@ -308,8 +308,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        print(torch.__version__)
-        # net.load_state_dict_all(MODELS_PATH + 'Epoch N1 Batch 10240')
+        net.load_state_dict_all(MODELS_PATH + 'Epoch N17')
         # net.load_localizer(MODELS_PATH + 'Epoch N1')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
@@ -392,11 +391,11 @@ if __name__ =='__main__':
     #             # 保存图片
     #             for i in range(train_recovered.shape[0]):
     #
-    #                 util.save_images((train_recovered[i]).mul(cropout_label_2).cpu(), 'epoch-recovery-{0}-{1}.png'.format(epoch,i), './Images', std=config.std,
+    #                 util.save_images((train_recovered[i]).mul(cropout_label_2).cpu(), 'epoch-recovery-{0}-{1}.bmp'.format(epoch,i), './Images', std=config.std,
     #                                  mean=config.mean)
-    #                 util.save_images(train_hidden[i].cpu(), 'epoch-hidden-{0}-{1}.png'.format(epoch,i), './Images', std=config.std,
+    #                 util.save_images(train_hidden[i].cpu(), 'epoch-hidden-{0}-{1}.bmp'.format(epoch,i), './Images', std=config.std,
     #                                  mean=config.mean)
-    #                 util.save_images(train_covers[i].cpu(), 'epoch-covers-{0}-{1}.png'.format(epoch,i), './Images', std=config.std,
+    #                 util.save_images(train_covers[i].cpu(), 'epoch-covers-{0}-{1}.bmp'.format(epoch,i), './Images', std=config.std,
     #                                  mean=config.mean)
     #
     #

@@ -168,7 +168,7 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N1')
+        net.load_model_old(MODELS_PATH + 'Epoch N2 Batch 20479')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         test(net, train_loader,test_loader, config,local_loader)
         # Plot loss through epochs
