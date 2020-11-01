@@ -5,12 +5,12 @@ class GlobalConfig():
     def __init__(self):
 
         self.num_epochs = 100
-        self.train_batch_size = 8
+        self.train_batch_size = 6
         self.test_batch_size = 1
 
         self.Height = 256
         self.Width = 256
-        self.block_size = 16
+        self.block_size = 4
         self.decoder_channels = 128
         self.min_required_block = 64
         self.attack_portion = 0.2

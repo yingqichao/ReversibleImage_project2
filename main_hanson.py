@@ -179,6 +179,10 @@ if __name__ =='__main__':
                                 losses['loss_discriminator_enc'], losses['loss_discriminator_recovery'])
 
                     print(str)
+                if idx % 10240 == 10239:
+                    net.save_model(MODELS_PATH + 'Epoch N{0} Batch {1}'.format((epoch + 1),idx))
+                    net.save_model_old(MODELS_PATH + 'Epoch N{0} Batch {1}'.format((epoch + 1),idx))
+                    net.save_state_dict_all(MODELS_PATH + 'Epoch N{0} Batch {1}'.format((epoch + 1),idx))
                 if idx % 128 == 127:
                     for i in range(x_recover.shape[0]):
                         # util.save_images(p7_final[i].cpu(),
@@ -226,6 +230,8 @@ if __name__ =='__main__':
             hist_loss_localization.append(mean_train_loss_localization)
             hist_loss_recover.append(mean_train_loss_recover)
             net.save_model(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
+            net.save_model_old(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
+            net.save_state_dict_all(MODELS_PATH + 'Epoch N{}'.format(epoch + 1))
             # Prints epoch average loss
             print('Epoch [{0}/{1}], Average_loss: Localization Loss {2:.4f}, Cover Loss {3:.4f}, Recover Loss {4:.4f}, '
                   'Adversial Cover Loss {5:.4f}, Adversial Recovery Loss {6:.4f}'.format(
@@ -290,9 +296,12 @@ if __name__ =='__main__':
         # net.load_state_dict_Discriminator(torch.load(MODELS_PATH + 'Epoch N' + config.loadfromEpochNum))
 
     if not config.skipMainTraining:
-        net.load_model(MODELS_PATH + 'Epoch N2')
+        # net.load_model(MODELS_PATH + 'Epoch N2')
         # net.load_localizer(MODELS_PATH + 'Epoch N1')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
+        print(net.preprocessing_network)
+        print(net.localizer)
+        print(net.revert_network)
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
         # Plot loss through epochs

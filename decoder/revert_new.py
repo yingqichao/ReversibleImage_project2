@@ -140,10 +140,10 @@ class Revert(nn.Module):
             nn.Conv2d(64, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
-        self.finalH2 = nn.Sequential(
-            nn.Conv2d(6, 3, kernel_size=1, padding=0),
-            nn.Tanh()
-        )
+        # self.finalH2 = nn.Sequential(
+        #     nn.Conv2d(6, 3, kernel_size=1, padding=0),
+        #     nn.Tanh()
+        # )
         self.upsample2 = PureUpsampling(scale=2)
         self.down16 = PureUpsampling(scale=16/256)
         self.down32 = PureUpsampling(scale=32/256)

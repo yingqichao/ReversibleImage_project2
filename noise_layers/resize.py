@@ -20,6 +20,7 @@ class Resize(nn.Module):
     def forward(self, noised_image):
 
         #resize_ratio = random_float(self.resize_ratio_min, self.resize_ratio_max)
+        print("Resize Attack")
         resize_ratio = 0.5
         # noised_image = noised_and_cover[0]
         out = F.interpolate(
