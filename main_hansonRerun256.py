@@ -309,7 +309,7 @@ if __name__ =='__main__':
 
     if not config.skipMainTraining:
         net.load_state_dict_all(MODELS_PATH + 'Epoch N17')
-        # net.load_localizer(MODELS_PATH + 'Epoch N1')
+        # net.load_state_dict_all(MODELS_PATH + 'Epoch N6 Batch 51199')
         # net.load_state_dict_all(MODELS_PATH + 'Epoch N1')
         net, hist_loss_localization, hist_loss_cover, hist_loss_recover, hist_loss_discriminator_enc, hist_loss_discriminator_recovery \
             = train(net, train_loader, config)
