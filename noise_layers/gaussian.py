@@ -14,7 +14,7 @@ class Gaussian(nn.Module):
         self.device = config.device
 
     def forward(self, tensor, mean=0, stddev=0.1):
-        print("Gaussian Attack")
+        print("Gaussian Attack Added")
         noise = torch.nn.init.normal_(torch.Tensor(tensor.size()).to(self.device), mean, stddev)
         return tensor + noise
 

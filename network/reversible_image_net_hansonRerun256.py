@@ -18,6 +18,9 @@ from noise_layers.crop import Crop
 from noise_layers.cropout import Cropout
 from noise_layers.identity import Identity
 from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.gaussian import Gaussian
+from noise_layers.dropout import Dropout
+from noise_layers.resize import Resize
 import pytorch_ssim
 import util.util as util
 
@@ -98,7 +101,9 @@ class ReversibleImageNetwork_hanson:
         self.jpeg_layer_70 = DiffJPEG(256, 256, quality=70, differentiable=True).cuda()
         self.jpeg_layer_60 = DiffJPEG(256, 256, quality=60, differentiable=True).cuda()
         self.jpeg_layer_50 = DiffJPEG(256, 256, quality=50, differentiable=True).cuda()
-        # self.jpeg_layer_10 = DiffJPEG(256, 256, quality=10, differentiable=True).cuda()
+        self.gaussian = Gaussian().cuda()
+        # self.dropout = Dropout(self.config,keep_ratio_range=(0.5,0.75)).cuda()
+        self.resize = Resize().cuda()
         self.jpeg_layer = JpegCompression().cuda()
         if torch.cuda.device_count() > 1:
             self.jpeg_layer = torch.nn.DataParallel(self.jpeg_layer)
@@ -110,6 +115,9 @@ class ReversibleImageNetwork_hanson:
         self.noise_layers.append(self.jpeg_layer_70)
         self.noise_layers.append(self.jpeg_layer_60)
         self.noise_layers.append(self.jpeg_layer_50)
+        self.noise_layers.append(self.gaussian)
+        self.noise_layers.append(self.resize)
+        # self.noise_layers.append(self.dropout)
         # if torch.cuda.device_count() > 1:
         #     self.crop_layer = torch.nn.DataParallel(self.crop_layer)
 
@@ -171,8 +179,8 @@ class ReversibleImageNetwork_hanson:
         self.revert_network.train()
         self.discriminator_patchRecovery.train()
         self.discriminator_patchHidden.train()
-        self.alpha -= 1/(2*118287)
-        self.roundCount += 1/(2*118287)
+        self.alpha -= 1/(118287)
+        self.roundCount += 1/(118287)
         # self.res_count -= 1 / (2*10240)
         if self.alpha < 0:
             self.alpha = 0
@@ -219,7 +227,7 @@ class ReversibleImageNetwork_hanson:
             loss_localization = (loss_localA + loss_localB) / 2
             loss_localization.backward()
             self.optimizer_localizer.step()
-            if loss_localization > (5 + self.alpha * 15):
+            if loss_localization > (5 + self.alpha * 5):
                 # 还不能用localizer给出预判
                 up_256, out_256 = self.revert_network(Cropped_out, cropout_mask[:, 0, :, :].unsqueeze(1), stage=256)
                 up_256B, out_256B = self.revert_network(Cropped_outB, cropout_maskB[:, 0, :, :].unsqueeze(1),stage=256)
@@ -286,13 +294,13 @@ class ReversibleImageNetwork_hanson:
             loss_localB = self.bce_with_logits_loss(pred_labelB.squeeze(1), cropout_maskB[:, 0, :, :]) * 100
             loss_localization = (loss_localA + loss_localB) / 2
 
-            if loss_cover>(2+self.alpha*2):
+            if loss_cover>(1+self.alpha*1):
                 print("Cover Loss added")
                 loss_enc_dec += loss_cover * self.config.hyper_cover  # + loss_mask * self.config.hyper_mask
                 loss_enc_dec += g_loss_adv_enc * self.config.hyper_discriminator
             loss_enc_dec += g_loss_adv_recovery * self.config.hyper_discriminator # g_loss_adv_enc * self.config.hyper_discriminator +
 
-            if loss_localization > (5 + self.alpha * 15):
+            if loss_localization > (5 + self.alpha * 5):
                 print("Localization Loss added")
                 loss_enc_dec += loss_localization * self.config.hyper_localizer
             loss_enc_dec.backward()
@@ -430,8 +438,10 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Loaded: " + path + '_revert_network.pkl')
         # self.localizer.load_state_dict(torch.load(path + '_localizer.pkl'))
         # print("Successfully Loaded: " + path + '_localizer.pkl')
-        # self.discriminator_patchRecovery.load_state_dict(torch.load(path + '_discriminator_patchRecovery.pkl'), strict=False)
+        # self.discriminator_patchRecovery.load_state_dict(torch.load(path + '_discriminator_patchRecovery.pkl'))
         # print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pkl')
+        # self.discriminator_patchHidden.load_state_dict(torch.load(path + '_discriminator_patchHidden.pkl'))
+        # print("Successfully Loaded: " + path + '_discriminator_patchHidden.pkl')
 
     def load_model(self, path):
         """Loading"""
@@ -492,6 +502,6 @@ class ReversibleImageNetwork_hanson:
         print("Successfully Loaded: " + path + '_revert_network.pth')
         self.discriminator_patchRecovery = torch.load(path + '_discriminator_patchRecovery.pth')
         print("Successfully Loaded: " + path + '_discriminator_patchRecovery.pth')
-        # self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
-        # print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
+        self.discriminator_patchHidden = torch.load(path + '_discriminator_patchHidden.pth')
+        print("Successfully Loaded: " + path + '_discriminator_patchHidden.pth')
 
