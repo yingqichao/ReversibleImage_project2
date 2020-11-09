@@ -124,26 +124,26 @@ class Revert(nn.Module):
         #     nn.Conv2d(6, 3, kernel_size=1, padding=0),
         # )
         #
-        # self.final32 = nn.Sequential(
-        #     nn.Conv2d(512, 3, kernel_size=1, padding=0),
-        #     # nn.Tanh()
-        # )
-        # self.final64 = nn.Sequential(
-        #     nn.Conv2d(256, 3, kernel_size=1, padding=0),
-        #     # nn.Tanh()
-        # )
-        # self.final128 = nn.Sequential(
-        #     nn.Conv2d(128, 3, kernel_size=1, padding=0),
-        #     # nn.Tanh()
-        # )
-        self.final256 = nn.Sequential(
-            nn.Conv2d(64, 3, kernel_size=1, padding=0),
+        self.final32 = nn.Sequential(
+            nn.Conv2d(512, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
-        # self.finalH2 = nn.Sequential(
-        #     nn.Conv2d(6, 3, kernel_size=1, padding=0),
-        #     nn.Tanh()
-        # )
+        self.final64 = nn.Sequential(
+            nn.Conv2d(256, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
+        self.final128 = nn.Sequential(
+            nn.Conv2d(128, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
+        self.final256 = nn.Sequential(
+            nn.Conv2d(64, 3, kernel_size=1, padding=0),
+            # nn.Tanh()
+        )
+        self.final512 = nn.Sequential(
+            nn.Conv2d(6, 3, kernel_size=1, padding=0),
+            nn.Tanh()
+        )
         self.upsample2 = PureUpsampling(scale=2)
         self.down16 = PureUpsampling(scale=16/256)
         self.down32 = PureUpsampling(scale=32/256)
@@ -188,37 +188,60 @@ class Revert(nn.Module):
         # up5 = self.upsample5_3(up5_cat)
 
         #32
-        up4_up = self.Up4(up5)
-        mask_32 = self.down32(crop_mask).expand(-1, up4_up.shape[1], -1, -1)
-        # up4_cat = torch.cat((down5, up4_up), 1)
-        up4_cat = torch.cat((up4_up*mask_32+down5*(1-mask_32), up4_up), 1)
-        up4 = self.upsample4_3(up4_cat)
+        if stage >= 32:
+            up4_up = self.Up4(up5)
+            mask_32 = self.down32(crop_mask).expand(-1, up4_up.shape[1], -1, -1)
+            # up4_cat = torch.cat((down5, up4_up), 1)
+            up4_cat = torch.cat((up4_up*mask_32+down5*(1-mask_32), up4_up), 1)
+            up4 = self.upsample4_3(up4_cat)
+            out_32 = self.final32(up4)
+            if stage==32:
+                return None, out_32
 
         #64
-        up3_up = self.Up3(up4)
-        mask_64 = self.down64(crop_mask).expand(-1, up3_up.shape[1], -1, -1)
-        # up3_cat = torch.cat((down6, up3_up), 1)
-        up3_cat = torch.cat((up3_up*mask_64+down6*(1-mask_64), up3_up), 1)
-        up3 = self.upsample3_3(up3_cat)
+        if stage >= 64:
+            up3_up = self.Up3(up4)
+            mask_64 = self.down64(crop_mask).expand(-1, up3_up.shape[1], -1, -1)
+            # up3_cat = torch.cat((down6, up3_up), 1)
+            up3_cat = torch.cat((up3_up*mask_64+down6*(1-mask_64), up3_up), 1)
+            up3 = self.upsample3_3(up3_cat)
+            out_64 = self.final64(up3)
+            if stage == 64:
+                return self.upsample2(out_32), out_64
 
+        if stage >= 128:
+            # 128
+            up2_up = self.Up2(up3)
+            mask_128 = self.down128(crop_mask).expand(-1, up2_up.shape[1], -1, -1)
+            # up2_cat = torch.cat((down7, up2_up), 1)
+            up2_cat = torch.cat((up2_up * mask_128 + down7 * (1 - mask_128), up2_up), 1)
+            up2 = self.upsample2_3(up2_cat)
+            out_128 = self.final128(up2)
+            if stage == 128:
+                return self.upsample2(out_64), out_128
 
-        # 128
-        up2_up = self.Up2(up3)
-        mask_128 = self.down128(crop_mask).expand(-1, up2_up.shape[1], -1, -1)
-        # up2_cat = torch.cat((down7, up2_up), 1)
-        up2_cat = torch.cat((up2_up * mask_128 + down7 * (1 - mask_128), up2_up), 1)
-        up2 = self.upsample2_3(up2_cat)
+        if stage >= 256:
+            # 256
+            up1_up = self.Up1(up2)
+            # up2_cat = torch.cat((down7, up2_up), 1)
+            mask_256 = crop_mask.expand(-1, up1_up.shape[1], -1, -1)
+            up1_cat = torch.cat((up1_up * mask_256 + down8 * (1 - mask_256), up1_up), 1)
+            up1 = self.upsample1_3(up1_cat)
 
-
-        # 256
-        up1_up = self.Up1(up2)
-        # up2_cat = torch.cat((down7, up2_up), 1)
-        up1_cat = torch.cat((up1_up * crop_mask + down8 * (1 - crop_mask), up1_up), 1)
-        up1 = self.upsample1_3(up1_cat)
-
-        out_256 = self.final256(up1)
+            out_256 = self.final256(up1)
 
         #up0_cat = torch.cat((out_256 * crop_mask + ori_image * (1 - crop_mask), out_256), 1)
         #recovered = self.finalH2(up0_cat)
-        return out_256
+            # if stage >= 256:
+            #     return self.upsample2(out_128),out_256
+
+        # if stage >= 512:
+
+            # mask_512 = crop_mask.expand(-1, out_256.shape[1], -1, -1)
+            # up_final = torch.cat((out_256 * mask_512 + p * (1 - mask_512), out_256), 1)
+            #
+            # out_final = self.final512(up_final)
+            return self.upsample2(out_128), out_256
+
+        return None,None
 

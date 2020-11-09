@@ -121,10 +121,7 @@ class Prep_pureUnet(nn.Module):
             nn.Conv2d(64, 3, kernel_size=1, padding=0),
             nn.Tanh()
         )
-        self.finalH2 = nn.Sequential(
-            nn.Conv2d(6, 3, kernel_size=1, padding=0),
-            nn.Tanh()
-        )
+
 
     def forward(self, p):
         # 256
@@ -180,5 +177,5 @@ class Prep_pureUnet(nn.Module):
         up1 = self.upsample1_3(up1_cat)
         up0 = self.final256(up1)
         #up0_cat = torch.cat((p, up0), 1)
-        Hidden = p+up0
-        return Hidden
+        # Hidden = p+up0
+        return up0

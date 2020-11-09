@@ -5,7 +5,7 @@ class GlobalConfig():
     def __init__(self):
 
         self.num_epochs = 100
-        self.train_batch_size = 6
+        self.train_batch_size = 4
         self.test_batch_size = 1
 
         self.Height = 256
@@ -33,6 +33,7 @@ class GlobalConfig():
         self.hyper_cover = 1
         self.hyper_recovery = 1
         self.hyper_discriminator = 1
+        self.hyper_tvloss = 1
         self.hyper_intermediate = 1
 
         self.learning_rate = 1
